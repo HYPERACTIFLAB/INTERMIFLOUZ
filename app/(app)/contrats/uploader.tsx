@@ -6,9 +6,13 @@ import { Camera, FileUp, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_FILE_BYTES, SUPPORTED_MIME } from "@/lib/extraction/config";
 import { ajouterDocument, creerDocumentImport, type NouveauDocument } from "./actions";
-import { lireDocument } from "./lecture";
+import { lancerLecture, lireDocument } from "./lecture";
 
-type Etat = { etape: "choix" } | { etape: "envoi" } | { etape: "lecture" } | { etape: "erreur"; message: string };
+type Etat =
+  | { etape: "choix" }
+  | { etape: "envoi"; numero?: number; total?: number }
+  | { etape: "lecture" }
+  | { etape: "erreur"; message: string };
 
 const EXTENSIONS: Record<string, string> = {
   "application/pdf": "pdf",
@@ -31,27 +35,19 @@ export function Uploader({ userId, mode, contratId }: Props) {
   const fichierRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
-  async function envoyer(file: File | undefined) {
-    if (!file) return;
+  /** Vérifie, dépose le fichier dans le stockage privé et renvoie sa description. */
+  async function deposer(file: File): Promise<NouveauDocument | string> {
     if (!(SUPPORTED_MIME as readonly string[]).includes(file.type)) {
-      setEtat({ etape: "erreur", message: "Format non pris en charge. Utilise un PDF, une photo JPEG, PNG ou WebP." });
-      return;
+      return `${file.name} : format non pris en charge (PDF, JPEG, PNG ou WebP).`;
     }
-    if (file.size > MAX_FILE_BYTES) {
-      setEtat({ etape: "erreur", message: "Fichier trop lourd (20 Mo maximum)." });
-      return;
-    }
+    if (file.size > MAX_FILE_BYTES) return `${file.name} : fichier trop lourd (20 Mo maximum).`;
 
-    setEtat({ etape: "envoi" });
     const chemin = `${userId}/${crypto.randomUUID()}.${EXTENSIONS[file.type]}`;
     const supabase = createClient();
     const { error } = await supabase.storage.from("documents").upload(chemin, file, { contentType: file.type });
-    if (error) {
-      setEtat({ etape: "erreur", message: "L'envoi du fichier a échoué : " + error.message });
-      return;
-    }
+    if (error) return `${file.name} : l'envoi a échoué (${error.message}).`;
 
-    const doc: NouveauDocument = {
+    return {
       chemin,
       nomFichier: file.name || `document.${EXTENSIONS[file.type]}`,
       mime: file.type as NouveauDocument["mime"],
@@ -59,6 +55,19 @@ export function Uploader({ userId, mode, contratId }: Props) {
       type,
       contratId: contratId ?? null,
     };
+  }
+
+  async function envoyer(liste: FileList | null) {
+    const files = Array.from(liste ?? []);
+    if (files.length === 0) return;
+    if (files.length > 1) return envoyerPlusieurs(files);
+
+    setEtat({ etape: "envoi" });
+    const doc = await deposer(files[0]);
+    if (typeof doc === "string") {
+      setEtat({ etape: "erreur", message: doc });
+      return;
+    }
 
     if (mode === "ajout") {
       const res = await ajouterDocument(doc);
@@ -82,11 +91,43 @@ export function Uploader({ userId, mode, contratId }: Props) {
     router.push(`/contrats/importer/${res.documentId}`);
   }
 
+  /** Import groupé : dépose tous les fichiers, lance les lectures, puis renvoie vers la liste. */
+  async function envoyerPlusieurs(files: File[]) {
+    const erreurs: string[] = [];
+    for (const [i, file] of files.entries()) {
+      setEtat({ etape: "envoi", numero: i + 1, total: files.length });
+      const doc = await deposer(file);
+      if (typeof doc === "string") {
+        erreurs.push(doc);
+        continue;
+      }
+      if (mode === "ajout") {
+        const res = await ajouterDocument(doc);
+        if (res.error) erreurs.push(`${file.name} : ${res.error}`);
+        continue;
+      }
+      const res = await creerDocumentImport(doc);
+      if (res.error || !res.documentId) erreurs.push(`${file.name} : ${res.error ?? "erreur inconnue"}`);
+      else if (res.lecture) await lancerLecture(res.documentId);
+    }
+
+    if (erreurs.length) setEtat({ etape: "erreur", message: erreurs.join(" ") });
+    else setEtat({ etape: "choix" });
+    if (mode === "ajout") router.refresh();
+    else if (!erreurs.length) router.push("/contrats");
+  }
+
   if (etat.etape === "envoi" || etat.etape === "lecture") {
     return (
       <div className="card flex flex-col items-center px-6 py-12 text-center" aria-live="polite">
         <Loader2 size={32} className="animate-spin text-accent" aria-hidden />
-        <p className="mt-4 font-medium">{etat.etape === "envoi" ? "Envoi du fichier…" : "Claude lit le document…"}</p>
+        <p className="mt-4 font-medium">
+          {etat.etape === "lecture"
+            ? "Claude lit le document…"
+            : etat.total
+              ? `Envoi du fichier ${etat.numero} sur ${etat.total}…`
+              : "Envoi du fichier…"}
+        </p>
         {etat.etape === "lecture" && <p className="mt-1 text-sm text-muted">Cela prend en général 10 à 40 secondes.</p>}
       </div>
     );
@@ -102,6 +143,9 @@ export function Uploader({ userId, mode, contratId }: Props) {
 
       <div>
         <label htmlFor={`type-${mode}`} className="label">Type de document</label>
+        {mode === "import" && (
+          <p className="mb-2 text-xs text-muted">Tu peux choisir plusieurs fichiers d&apos;un coup. Claude corrige le type s&apos;il se trompe.</p>
+        )}
         <select id={`type-${mode}`} value={type} onChange={(e) => setType(e.target.value as NouveauDocument["type"])} className="input">
           <option value="contrat">Contrat de travail</option>
           <option value="fiche_paie">Fiche de paie</option>
@@ -112,7 +156,7 @@ export function Uploader({ userId, mode, contratId }: Props) {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button type="button" onClick={() => fichierRef.current?.click()} className="btn-primary py-4">
-          <FileUp size={20} aria-hidden /> Choisir un fichier
+          <FileUp size={20} aria-hidden /> Choisir des fichiers
         </button>
         <button type="button" onClick={() => photoRef.current?.click()} className="btn-secondary py-4">
           <Camera size={20} aria-hidden /> Prendre une photo
@@ -122,8 +166,12 @@ export function Uploader({ userId, mode, contratId }: Props) {
         ref={fichierRef}
         type="file"
         accept="application/pdf,image/jpeg,image/png,image/webp"
+        multiple
         className="sr-only"
-        onChange={(e) => envoyer(e.target.files?.[0])}
+        onChange={(e) => {
+          envoyer(e.target.files);
+          e.target.value = "";
+        }}
       />
       <input
         ref={photoRef}
@@ -131,7 +179,10 @@ export function Uploader({ userId, mode, contratId }: Props) {
         accept="image/jpeg,image/png"
         capture="environment"
         className="sr-only"
-        onChange={(e) => envoyer(e.target.files?.[0])}
+        onChange={(e) => {
+          envoyer(e.target.files);
+          e.target.value = "";
+        }}
       />
     </div>
   );

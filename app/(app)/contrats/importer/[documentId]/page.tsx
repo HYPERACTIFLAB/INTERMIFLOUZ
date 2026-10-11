@@ -17,8 +17,9 @@ import { VALEURS_VIDES, valeursDepuisExtraction } from "../../form-values";
 
 export const metadata = { title: "Vérifier l'import" };
 
-export default async function VerifierImportPage({ params }: PageProps<"/contrats/importer/[documentId]">) {
+export default async function VerifierImportPage({ params, searchParams }: PageProps<"/contrats/importer/[documentId]">) {
   const { documentId } = await params;
+  const { suite } = await searchParams;
   const db = await getDb();
   if (!db) return <DemoNotice />;
 
@@ -55,6 +56,12 @@ export default async function VerifierImportPage({ params }: PageProps<"/contrat
         description={doc.nom_fichier}
         back={{ href: "/contrats", label: "Contrats" }}
       />
+
+      {suite === "1" && (
+        <p className="mb-4 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent">
+          Contrat précédent enregistré. Voici le document suivant à vérifier.
+        </p>
+      )}
 
       {doc.extraction_statut === "en_cours" && (
         <p className="mb-4 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent" aria-live="polite">

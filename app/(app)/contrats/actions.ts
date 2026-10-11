@@ -133,16 +133,28 @@ export async function saveContrat(_: FormState, formData: FormData): Promise<For
   }
 
   const documentId = vide(formData.get("document_id"));
+  let suivant: string | null = null;
   if (documentId) {
     await db.supabase
       .from("documents")
       .update({ contrat_id: contratId, extraction_statut: "validee" })
       .eq("id", documentId);
+    // Import groupé : on enchaîne directement sur le document suivant à vérifier.
+    const { data } = await db.supabase
+      .from("documents")
+      .select("id")
+      .is("contrat_id", null)
+      .in("extraction_statut", ["a_valider", "erreur", "aucune"])
+      .in("type", ["contrat", "fiche_paie", "aem"])
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    suivant = (data?.id as string | undefined) ?? null;
   }
 
   revalidatePath("/contrats");
   revalidatePath("/contacts");
-  redirect(`/contrats/${contratId}`);
+  redirect(suivant ? `/contrats/importer/${suivant}?suite=1` : `/contrats/${contratId}`);
 }
 
 export async function updateStatutAem(formData: FormData) {

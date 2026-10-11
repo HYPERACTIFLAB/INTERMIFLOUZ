@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FilePlus2, FileText, PenLine, Sparkles } from "lucide-react";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { PageHeader } from "@/components/page-header";
 import { DemoNotice, EmptyState } from "@/components/states";
 import { getDb } from "@/lib/data/db";
@@ -8,6 +9,13 @@ import { LIBELLES_AEM, type Contrat } from "@/lib/data/types";
 import { formatEuros, formatNombre, formatPeriode } from "@/lib/format";
 
 export const metadata = { title: "Contrats" };
+
+const STATUT_IMPORT = {
+  en_cours: "lecture en cours…",
+  a_valider: "à vérifier",
+  erreur: "lecture échouée",
+  aucune: "à remplir",
+};
 
 const COULEUR_AEM = {
   a_recevoir: "bg-warning-soft text-warning",
@@ -24,7 +32,7 @@ export default async function ContratsPage() {
       actions={
         <>
           <Link href="/contrats/importer" className="btn-primary">
-            <FilePlus2 size={18} aria-hidden /> Importer un PDF
+            <FilePlus2 size={18} aria-hidden /> Importer
           </Link>
           <Link href="/contrats/nouveau" className="btn-secondary">
             <PenLine size={18} aria-hidden /> Saisir
@@ -43,7 +51,7 @@ export default async function ContratsPage() {
       .returns<Contrat[]>(),
     db.supabase
       .from("documents")
-      .select("id, nom_fichier")
+      .select("id, nom_fichier, extraction_statut")
       .is("contrat_id", null)
       .in("extraction_statut", ["a_valider", "erreur", "aucune", "en_cours"])
       .in("type", ["contrat", "fiche_paie", "aem"])
@@ -64,16 +72,23 @@ export default async function ContratsPage() {
 
       {(aValider ?? []).length > 0 && (
         <section className="mb-6 rounded-2xl border border-warning/40 bg-warning-soft p-4">
-          <p className="font-medium text-warning">Imports à terminer</p>
-          <ul className="mt-2 space-y-1 text-sm">
+          <p className="font-medium text-warning">Imports à vérifier ({aValider!.length})</p>
+          <ul className="mt-2 divide-y divide-warning/20 text-sm">
             {aValider!.map((d) => (
               <li key={d.id}>
-                <Link href={`/contrats/importer/${d.id}`} className="underline">
-                  {d.nom_fichier}
+                <Link href={`/contrats/importer/${d.id}`} className="flex items-center justify-between gap-3 py-2">
+                  <span className="min-w-0 truncate underline">{d.nom_fichier}</span>
+                  <span className="shrink-0 text-xs text-muted">{STATUT_IMPORT[d.extraction_statut as keyof typeof STATUT_IMPORT] ?? ""}</span>
                 </Link>
               </li>
             ))}
           </ul>
+          {aValider!.some((d) => d.extraction_statut === "en_cours") && (
+            <>
+              <p className="mt-2 text-xs text-muted">Claude lit encore certains documents, la liste se met à jour toute seule.</p>
+              <AutoRefresh intervalMs={4000} />
+            </>
+          )}
         </section>
       )}
 

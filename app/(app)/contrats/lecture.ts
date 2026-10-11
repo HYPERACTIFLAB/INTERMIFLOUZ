@@ -4,10 +4,11 @@ import { createClient } from "@/lib/supabase/client";
 import { extraireMaintenant } from "./actions";
 
 /**
- * Lance la lecture par Claude en tâche de fond (Netlify), puis attend le résultat.
+ * Lance la lecture par Claude en tâche de fond (Netlify) sans attendre le résultat.
  * Sans tâche de fond disponible (développement local), lit directement.
+ * Renvoie true si la lecture tourne en tâche de fond.
  */
-export async function lireDocument(documentId: string) {
+export async function lancerLecture(documentId: string): Promise<boolean> {
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -20,12 +21,15 @@ export async function lireDocument(documentId: string) {
       }).catch(() => null)
     : null;
 
-  if (reponse?.status !== 202) {
-    await extraireMaintenant(documentId);
-    return;
-  }
+  if (reponse?.status === 202) return true;
+  await extraireMaintenant(documentId);
+  return false;
+}
 
-  // Attend la fin de la lecture (3 minutes maximum).
+/** Lance la lecture puis attend son résultat (3 minutes maximum). */
+export async function lireDocument(documentId: string) {
+  if (!(await lancerLecture(documentId))) return;
+  const supabase = createClient();
   const fin = Date.now() + 180_000;
   while (Date.now() < fin) {
     await new Promise((r) => setTimeout(r, 2500));
@@ -33,4 +37,3 @@ export async function lireDocument(documentId: string) {
     if (doc && doc.extraction_statut !== "en_cours") return;
   }
 }
-
