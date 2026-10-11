@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { retirerContrat, synchroniserContrat } from "@/lib/google/synchro";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireDb } from "@/lib/data/db";
@@ -144,6 +145,7 @@ export async function saveContrat(_: FormState, formData: FormData): Promise<For
     await marquerAemRecue(db.supabase, contratId!, documentIds);
     suivant = await lotSuivant(db.supabase);
   }
+  await synchroniserContrat(db.supabase, contratId!);
 
   revalidatePath("/contrats");
   revalidatePath("/contacts");
@@ -165,6 +167,7 @@ export async function updateStatutAem(formData: FormData) {
 export async function deleteContrat(formData: FormData) {
   const { supabase } = await requireDb();
   const id = String(formData.get("id"));
+  await retirerContrat(supabase, id);
   const { data: docs } = await supabase.from("documents").select("id, chemin_stockage").eq("contrat_id", id);
   if (docs?.length) {
     await supabase.storage.from("documents").remove(docs.map((d) => d.chemin_stockage as string));
@@ -313,6 +316,7 @@ export async function rattacherAuContrat(formData: FormData) {
     .update({ contrat_id: contratId, extraction_statut: "validee" })
     .in("id", docs.map((d) => d.id as string));
   await marquerAemRecue(supabase, contratId, docs.map((d) => d.id as string));
+  await synchroniserContrat(supabase, contratId);
 
   revalidatePath("/contrats");
   revalidatePath(`/contrats/${contratId}`);

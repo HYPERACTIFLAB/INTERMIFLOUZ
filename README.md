@@ -17,7 +17,7 @@ frais, devis/factures, finances et agenda.
 | c | Notes de frais avec scan + page d'accueil (tableau de bord) | ✅ |
 | d | Micro-entreprise + devis/factures | à venir |
 | e | Tableau de bord finances + simulateur | à venir |
-| f | Google Agenda | à venir |
+| f | Google Agenda (agenda « Intermiflouze – Tournages » mis à jour automatiquement) | ✅ |
 
 ---
 
@@ -54,6 +54,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | `20261011000003_etape_b_intermittence.sql` | b : situation d'intermittence, règles modifiées |
 | `20261011000004_etape_c_frais_paiements.sql` | c : notes de frais, salaire perçu ou non |
 | `20261011000005_objectif_are.sql` | objectif d'allocation journalière |
+| `20261011000006_etape_f_agenda.sql` | f : connexion Google Agenda |
 
 ### 1 ter. Connexion
 
@@ -136,6 +137,37 @@ Coût estimé : 2 à 5 centimes de dollar par document (modèle Claude Opus 5.5)
 la dépense du mois en bas de la page Contrats. Quand le crédit est épuisé, l'appli le signale
 et tu continues en saisie manuelle.
 
+### 3 ter. Google Agenda (gratuit, une fois, depuis l'ordinateur)
+
+L'appli crée son propre agenda « Intermiflouze – Tournages » dans ton Google Agenda et y met tes
+jours de tournage. Elle n'a accès qu'à cet agenda-là : elle ne peut ni lire ni modifier les autres.
+
+1. Va sur <https://console.cloud.google.com> (avec ton compte Gmail) → en haut, **Sélectionner un
+   projet → Nouveau projet** → nom `Intermiflouze` → **Créer**, puis sélectionne-le.
+2. Barre de recherche en haut : tape **Google Calendar API** → ouvre-la → **Activer**.
+3. Menu ☰ → **API et services → Écran de consentement OAuth** (ou « Google Auth Platform ») →
+   **Commencer** :
+   - Nom de l'application : `Intermiflouze` ; e-mail d'assistance : ton adresse.
+   - Audience : **Externe**.
+   - Coordonnées : ton adresse. Accepte les conditions → **Créer**.
+4. Dans **Audience** : clique sur **Publier l'application** (passer « En production ») et confirme.
+   Sans ça, Google coupe l'accès tous les 7 jours. Pas besoin de validation par Google pour un usage perso.
+5. Dans **Clients** (ou « Identifiants ») → **Créer un client** :
+   - Type d'application : **Application Web** ; nom : `Intermiflouze`.
+   - **URI de redirection autorisés** → **Ajouter un URI** :
+     `https://intermiflouze.netlify.app/api/google/callback`
+   - **Créer**. Une fenêtre affiche l'**ID client** et le **Code secret du client**.
+6. Dans Netlify : **Project configuration → Environment variables → Add a variable** :
+   - `GOOGLE_CLIENT_ID` : l'ID client (se termine par `.apps.googleusercontent.com`).
+   - `GOOGLE_CLIENT_SECRET` : le code secret, en cochant **Contains secret values**.
+7. **Deploys → Trigger deploy**, puis dans l'appli : **Agenda → Connecter Google Agenda**.
+   Google affiche « Application non validée » : **Paramètres avancés → Accéder à Intermiflouze**,
+   puis coche la case de l'agenda et **Continuer**.
+
+Ensuite, chaque contrat enregistré, complété ou supprimé est mis à jour tout seul dans Google
+(un événement « journée entière » par série de jours travaillés). Le jeton Google est chiffré en base
+(AES-256-GCM, clé dérivée du code secret client). Changer le code secret oblige à reconnecter Google.
+
 ### 4. Installer l'appli
 
 - **iPhone** : ouvre ton adresse Vercel dans **Safari** → bouton **Partager** → **Sur l'écran d'accueil**.
@@ -179,6 +211,7 @@ app/auth/        Retour de Google, déconnexion
 components/      Éléments d'interface
 lib/             Logique (Supabase, configuration, navigation)
 lib/extraction/  Lecture des documents par Claude (schéma des champs, coût)
+lib/google/      Google Agenda : connexion, chiffrement du jeton, envoi des contrats
 supabase/        Tables et règles de sécurité (migrations SQL)
 proxy.ts         Vérifie la connexion avant chaque page
 public/sw.js     Service worker (installation, page hors ligne)
@@ -187,7 +220,7 @@ public/sw.js     Service worker (installation, page hors ligne)
 ### Sécurité
 
 - Toutes les pages exigent une session Supabase valide **et** un e-mail présent dans `ALLOWED_EMAILS`.
-- Les clés secrètes (Claude, Google Agenda…) ne seront jamais préfixées `NEXT_PUBLIC_` : elles restent sur le serveur.
+- Les clés secrètes (Claude, Google Agenda) ne sont jamais préfixées `NEXT_PUBLIC_` : elles restent sur le serveur.
 - Le service worker ne met aucune donnée personnelle en cache.
 - Chaque table a une règle RLS « je ne vois que mes lignes » ; les fichiers sont dans un stockage privé,
   rangés par utilisateur, et affichés via des liens valables 10 minutes.
