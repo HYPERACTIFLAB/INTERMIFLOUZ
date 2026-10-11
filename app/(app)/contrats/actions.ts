@@ -7,6 +7,8 @@ import { requireDb } from "@/lib/data/db";
 import { parseEurosEnCentimes, parseNombre } from "@/lib/format";
 import { SUPPORTED_MIME, extractionEnabled } from "@/lib/extraction/config";
 import { lancerExtraction } from "@/lib/extraction/run";
+import { chargerLots } from "@/lib/data/imports";
+import { fusionner, lireExtraction, type DocLu } from "@/lib/extraction/regroupement";
 import type { DocumentType } from "@/lib/data/types";
 
 export type FormState = { error?: string };
@@ -132,24 +134,14 @@ export async function saveContrat(_: FormState, formData: FormData): Promise<For
     contratId = data.id as string;
   }
 
-  const documentId = vide(formData.get("document_id"));
+  const documentIds = idsDocuments(formData);
   let suivant: string | null = null;
-  if (documentId) {
+  if (documentIds.length) {
     await db.supabase
       .from("documents")
       .update({ contrat_id: contratId, extraction_statut: "validee" })
-      .eq("id", documentId);
-    // Import groupé : on enchaîne directement sur le document suivant à vérifier.
-    const { data } = await db.supabase
-      .from("documents")
-      .select("id")
-      .is("contrat_id", null)
-      .in("extraction_statut", ["a_valider", "erreur", "aucune"])
-      .in("type", ["contrat", "fiche_paie", "aem"])
-      .order("created_at")
-      .limit(1)
-      .maybeSingle();
-    suivant = (data?.id as string | undefined) ?? null;
+      .in("id", documentIds);
+    suivant = await lotSuivant(db.supabase);
   }
 
   revalidatePath("/contrats");
@@ -268,10 +260,75 @@ export async function deleteDocument(formData: FormData) {
   revalidatePath("/contrats");
 }
 
-/** Abandonne un import pas encore validé (supprime le fichier). */
+/** Abandonne un import pas encore validé (supprime le ou les fichiers du lot). */
 export async function abandonnerImport(formData: FormData) {
-  await deleteDocument(formData);
-  redirect("/contrats");
+  const { supabase } = await requireDb();
+  const ids = idsDocuments(formData);
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("id, chemin_stockage")
+    .in("id", ids)
+    .is("contrat_id", null);
+  if (docs?.length) {
+    await supabase.storage.from("documents").remove(docs.map((d) => d.chemin_stockage as string));
+    await supabase.from("documents").delete().in("id", docs.map((d) => d.id as string));
+  }
+  revalidatePath("/contrats");
+  const suivant = await lotSuivant(supabase);
+  redirect(suivant ? `/contrats/importer/${suivant}` : "/contrats");
+}
+
+/**
+ * Rattache les documents d'un lot à un contrat déjà enregistré (ex. l'AEM arrive après coup)
+ * et complète les montants manquants du contrat avec ce qu'ils contiennent.
+ */
+export async function rattacherAuContrat(formData: FormData) {
+  const { supabase } = await requireDb();
+  const contratId = z.string().uuid().parse(formData.get("contrat_id"));
+  const ids = idsDocuments(formData);
+
+  const [{ data: contrat }, { data: docs }] = await Promise.all([
+    supabase.from("contrats").select("heures, cachets, salaire_brut, salaire_net").eq("id", contratId).maybeSingle(),
+    supabase.from("documents").select("id, type, nom_fichier, extraction_brute").in("id", ids).is("contrat_id", null),
+  ]);
+  if (!contrat || !docs?.length) redirect("/contrats");
+
+  const lus = docs
+    .map((d) => ({ id: d.id as string, type: d.type as string, nom_fichier: d.nom_fichier as string, extraction: lireExtraction(d.extraction_brute) }))
+    .filter((d): d is DocLu => d.extraction !== null);
+  if (lus.length) {
+    const e = fusionner(lus);
+    const complement: Record<string, number> = {};
+    if (contrat.salaire_brut === null && e.salaire_brut.valeur !== null) complement.salaire_brut = Math.round(e.salaire_brut.valeur * 100);
+    if (contrat.salaire_net === null && e.salaire_net.valeur !== null) complement.salaire_net = Math.round(e.salaire_net.valeur * 100);
+    if (Number(contrat.heures) === 0 && e.heures.valeur) complement.heures = e.heures.valeur;
+    if (contrat.cachets === 0 && e.cachets.valeur) complement.cachets = Math.round(e.cachets.valeur);
+    if (Object.keys(complement).length) await supabase.from("contrats").update(complement).eq("id", contratId);
+  }
+
+  await supabase
+    .from("documents")
+    .update({ contrat_id: contratId, extraction_statut: "validee" })
+    .in("id", docs.map((d) => d.id as string));
+
+  revalidatePath("/contrats");
+  revalidatePath(`/contrats/${contratId}`);
+  const suivant = await lotSuivant(supabase);
+  redirect(suivant ? `/contrats/importer/${suivant}?suite=1` : `/contrats/${contratId}`);
+}
+
+/** Identifiants de documents envoyés par un formulaire (cases à cocher ou champ caché). */
+function idsDocuments(formData: FormData) {
+  return formData
+    .getAll("document_ids")
+    .map(String)
+    .filter((v) => z.string().uuid().safeParse(v).success);
+}
+
+/** Premier document du prochain lot à vérifier (null s'il n'y en a plus). */
+async function lotSuivant(supabase: Db["supabase"]) {
+  const lots = await chargerLots(supabase);
+  return lots[0]?.docs[0]?.id ?? null;
 }
 
 /** Remet un document en attente de lecture (bouton « Relancer la lecture »). */

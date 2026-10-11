@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { DemoNotice, EmptyState } from "@/components/states";
 import { getDb } from "@/lib/data/db";
 import { usageIaDuMois } from "@/lib/data/queries";
+import { chargerLots } from "@/lib/data/imports";
 import { LIBELLES_AEM, type Contrat } from "@/lib/data/types";
 import { formatEuros, formatNombre, formatPeriode } from "@/lib/format";
 
@@ -43,19 +44,13 @@ export default async function ContratsPage() {
   );
   if (!db) return <>{header}<DemoNotice /></>;
 
-  const [{ data }, { data: aValider }, usage] = await Promise.all([
+  const [{ data }, lots, usage] = await Promise.all([
     db.supabase
       .from("contrats")
       .select("*, organisation:organisations(id, nom), projet:projets(id, nom)")
       .order("date_debut", { ascending: false })
       .returns<Contrat[]>(),
-    db.supabase
-      .from("documents")
-      .select("id, nom_fichier, extraction_statut")
-      .is("contrat_id", null)
-      .in("extraction_statut", ["a_valider", "erreur", "aucune", "en_cours"])
-      .in("type", ["contrat", "fiche_paie", "aem"])
-      .order("created_at", { ascending: false }),
+    chargerLots(db.supabase),
     usageIaDuMois(db.supabase),
   ]);
   const contrats = data ?? [];
@@ -70,20 +65,34 @@ export default async function ContratsPage() {
     <>
       {header}
 
-      {(aValider ?? []).length > 0 && (
+      {lots.length > 0 && (
         <section className="mb-6 rounded-2xl border border-warning/40 bg-warning-soft p-4">
-          <p className="font-medium text-warning">Imports à vérifier ({aValider!.length})</p>
+          <p className="font-medium text-warning">Imports à vérifier ({lots.length})</p>
           <ul className="mt-2 divide-y divide-warning/20 text-sm">
-            {aValider!.map((d) => (
-              <li key={d.id}>
-                <Link href={`/contrats/importer/${d.id}`} className="flex items-center justify-between gap-3 py-2">
-                  <span className="min-w-0 truncate underline">{d.nom_fichier}</span>
-                  <span className="shrink-0 text-xs text-muted">{STATUT_IMPORT[d.extraction_statut as keyof typeof STATUT_IMPORT] ?? ""}</span>
-                </Link>
-              </li>
-            ))}
+            {lots.map((lot) => {
+              const e = lot.extraction;
+              const titre = e?.employeur_nom.valeur ?? lot.docs[0].nom_fichier;
+              const detail = e?.date_debut.valeur
+                ? formatPeriode(e.date_debut.valeur, e.date_fin.valeur ?? e.date_debut.valeur)
+                : null;
+              return (
+                <li key={lot.docs[0].id}>
+                  <Link href={`/contrats/importer/${lot.docs[0].id}`} className="flex items-center justify-between gap-3 py-2">
+                    <span className="min-w-0">
+                      <span className="block truncate underline">{titre}</span>
+                      {(detail || lot.docs.length > 1) && (
+                        <span className="block text-xs text-muted">
+                          {[detail, lot.docs.length > 1 ? `${lot.docs.length} documents` : null].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted">{STATUT_IMPORT[lot.statut as keyof typeof STATUT_IMPORT] ?? ""}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
-          {aValider!.some((d) => d.extraction_statut === "en_cours") && (
+          {lots.some((l) => l.statut === "en_cours") && (
             <>
               <p className="mt-2 text-xs text-muted">Claude lit encore certains documents, la liste se met à jour toute seule.</p>
               <AutoRefresh intervalMs={4000} />

@@ -6,12 +6,15 @@ import { ErrorBanner } from "@/components/states";
 import { saveContrat, type FormState } from "./actions";
 import { NOUVELLE_ORGANISATION, type ContratFormValues } from "./form-values";
 
+const LIBELLES_TYPE: Record<string, string> = { contrat: "Contrat", fiche_paie: "Bulletin de salaire", aem: "AEM", autre: "Autre document" };
+
 type Props = {
   valeurs: ContratFormValues;
   organisations: { id: string; nom: string }[];
   projets: string[];
   contratId?: string;
-  documentId?: string;
+  /** Documents importés rattachés à la fiche (cases à cocher s'il y en a plusieurs). */
+  documents?: { id: string; nom_fichier: string; type: string }[];
   source?: "manuel" | "import_ia";
   joursTravailles?: string[];
   /** Champs que Claude n'a pas lus avec certitude (surlignés en orange). */
@@ -26,7 +29,7 @@ export function ContratForm({
   organisations,
   projets,
   contratId,
-  documentId,
+  documents = [],
   source = "manuel",
   joursTravailles = [],
   incertains = [],
@@ -49,7 +52,28 @@ export function ContratForm({
     <form action={action} className="space-y-6">
       <ErrorBanner message={state.error} />
       {contratId && <input type="hidden" name="id" value={contratId} />}
-      {documentId && <input type="hidden" name="document_id" value={documentId} />}
+      {documents.length === 1 && <input type="hidden" name="document_ids" value={documents[0].id} />}
+      {documents.length > 1 && (
+        <fieldset className="rounded-xl bg-background p-4">
+          <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
+            Documents regroupés sur cette fiche
+          </legend>
+          <ul className="space-y-2">
+            {documents.map((d) => (
+              <li key={d.id}>
+                <label className="flex items-start gap-3 text-sm">
+                  <input type="checkbox" name="document_ids" value={d.id} defaultChecked className="mt-0.5 size-5 accent-[var(--accent)]" />
+                  <span className="min-w-0">
+                    <span className="block font-medium">{LIBELLES_TYPE[d.type] ?? "Document"}</span>
+                    <span className="block truncate text-muted">{d.nom_fichier}</span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-muted">Décoche un document s&apos;il ne concerne pas ce contrat : il restera à vérifier à part.</p>
+        </fieldset>
+      )}
       <input type="hidden" name="source" value={source} />
       <input type="hidden" name="jours_travailles" value={JSON.stringify(joursTravailles)} />
 
