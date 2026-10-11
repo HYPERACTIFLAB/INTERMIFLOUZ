@@ -1,6 +1,6 @@
 # Intermiflouze — Architecture et modèle de données
 
-> Proposition n°1, à valider avant le début du développement.
+> Validée le 11/10/2026 (stack, connexion Google, déclaration URSSAF mensuelle, pas de TVA).
 
 ---
 
@@ -39,11 +39,11 @@ d'administration de Supabase.
 
 | Brique | Choix | Pourquoi (en clair) |
 |---|---|---|
-| Application | **Next.js 15 (App Router) + TypeScript** | Une seule base de code pour l'interface *et* le serveur. TypeScript attrape beaucoup d'erreurs avant qu'elles n'arrivent chez toi. Très documenté, facile à faire maintenir par quelqu'un d'autre. |
+| Application | **Next.js 16 (App Router) + TypeScript** | Une seule base de code pour l'interface *et* le serveur. TypeScript attrape beaucoup d'erreurs avant qu'elles n'arrivent chez toi. Très documenté, facile à faire maintenir par quelqu'un d'autre. |
 | Base, connexion, fichiers | **Supabase** | Trois besoins en un seul service : base de données Postgres (solide, exportable), authentification (e-mail + lien magique, ou Google), stockage de fichiers privé. Les règles **RLS** (Row Level Security) garantissent au niveau de la base que chaque ligne n'est lisible que par son propriétaire. Offre gratuite suffisante pour un usage perso, données hébergeables en Europe. |
 | Hébergement | **Vercel** | Déploiement automatique à chaque modification poussée sur GitHub, HTTPS inclus. (Alternative équivalente si tu préfères : Netlify.) |
 | Style | **Tailwind CSS + composants shadcn/ui** | Interface sobre et lisible, pensée mobile d'abord, mode sombre facile. |
-| PWA | **Serwist** (service worker) + manifeste | Rend l'appli installable sur iPhone (« Ajouter à l'écran d'accueil ») et sur ordinateur, avec icône et lancement plein écran. |
+| PWA | Manifeste + petit service worker maison (`public/sw.js`) | Pas de dépendance en plus. Rend l'appli installable sur iPhone (« Ajouter à l'écran d'accueil ») et sur ordinateur, avec icône et lancement plein écran. |
 | Extraction IA | **API Claude (SDK officiel `@anthropic-ai/sdk`)**, modèle `claude-opus-5-5` | Claude lit nativement les PDF et les photos. On utilise les *structured outputs* : Claude renvoie un JSON qui respecte exactement notre format, avec un indice de confiance par champ. Coût estimé : quelques centimes par document. |
 | Formulaires | **React Hook Form + Zod** | Le même schéma Zod valide le formulaire, la réponse de Claude et les données en base. |
 | Graphiques | **Recharts** | Simple, responsive. |
@@ -59,14 +59,14 @@ Ce que j'ai écarté :
 ### Coûts mensuels attendus
 - Supabase : 0 € (offre gratuite : 500 Mo de base, 1 Go de fichiers). ~25 $/mois si tu dépasses.
 - Vercel : 0 € (offre Hobby).
-- Claude : à l'usage. Ordre de grandeur : 2 à 5 centimes par contrat ou justificatif analysé.
+- Claude : **payant à l'usage, pas d'offre gratuite** (crédit prépayé). Seul poste payant. L'import intelligent est optionnel : sans clé Claude, la saisie manuelle fonctionne.
 - Google Agenda : gratuit.
 
 ---
 
 ## 3. Sécurité et données sensibles
 
-- **Connexion obligatoire** sur toutes les pages (middleware Next.js). Un seul compte au départ (le tien) ; les inscriptions publiques sont désactivées.
+- **Connexion obligatoire** sur toutes les pages (`proxy.ts`, l'ancien « middleware » de Next.js), via « Se connecter avec Google ». Seuls les e-mails listés dans `ALLOWED_EMAILS` sont acceptés.
 - **RLS Supabase** : chaque table a une colonne `user_id` et une règle « je ne vois que mes lignes ». Même en cas de bug dans l'appli, la base refuse.
 - **Fichiers** dans un bucket Supabase **privé** ; l'appli génère des liens temporaires (valables quelques minutes) pour les afficher.
 - **Clés secrètes** (`ANTHROPIC_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_SECRET`) uniquement dans les variables d'environnement du serveur, jamais préfixées `NEXT_PUBLIC_`.
@@ -115,7 +115,8 @@ Extrait (les valeurs seront vérifiées une par une à l'étape b, avec toi) :
     "plafond_ca_bnc": { "valeur": null, "a_verifier": true },
     "seuil_franchise_tva": { "valeur": null, "a_verifier": true },
     "taux_cotisations_bnc": { "valeur": null, "a_verifier": true },
-    "periodicite_declaration": "mensuelle | trimestrielle"
+    "periodicite_declaration": "mensuelle",
+    "franchise_tva": true
   }
 }
 ```
