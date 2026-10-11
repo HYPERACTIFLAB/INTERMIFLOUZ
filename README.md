@@ -11,7 +11,7 @@ frais, devis/factures, finances et agenda.
 
 | Étape | Contenu | État |
 |---|---|---|
-| 0 | Socle : connexion Google, menu, installation PWA | ✅ |
+| 0 | Socle : connexion (code par e-mail), menu, installation PWA | ✅ |
 | a | Contacts, contrats + import PDF intelligent | ✅ |
 | b | Compteur d'heures + récap d'actualisation | à venir |
 | c | Notes de frais avec scan | à venir |
@@ -50,8 +50,20 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | Fichier | Étape |
 |---|---|
 | `20261011000001_etape_a_contrats.sql` | a : contacts, contrats, documents |
+| `20261011000002_securite_rls_auto_enable.sql` | sécurité (option « automatic RLS ») |
 
-### 2. Autoriser « Se connecter avec Google » (Google Cloud)
+### 1 ter. E-mail de connexion (code à 6 chiffres)
+
+On se connecte avec un code reçu par e-mail. Dans Supabase : **Authentication → Emails →
+Magic link** (ou « Magic Link or OTP ») :
+
+- **Subject** : `Ton code de connexion Intermiflouze`
+- **Body** : colle le contenu de [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html), puis **Save**.
+
+La connexion avec Google (section suivante) est optionnelle : elle s'active en ajoutant la
+variable `NEXT_PUBLIC_GOOGLE_LOGIN=1` une fois Google configuré.
+
+### 2. (Optionnel) Autoriser « Se connecter avec Google » (Google Cloud)
 
 1. Va sur <https://console.cloud.google.com> → en haut, **Sélectionner un projet → Nouveau projet** → nom `Intermiflouze`.
 2. Menu **API et services → Écran de consentement OAuth** (ou « Google Auth Platform ») :
@@ -77,7 +89,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | ton Project URL Supabase |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ta Publishable key |
-   | `ALLOWED_EMAILS` | ton adresse Gmail (seule personne autorisée) |
+   | `ALLOWED_EMAILS` | ton adresse e-mail (seule personne autorisée) |
 
 4. **Deploy**. Vercel te donne une adresse du type `https://intermiflouz.vercel.app`.
 5. Retour dans Supabase : **Authentication → URL Configuration** :

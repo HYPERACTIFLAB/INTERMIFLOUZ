@@ -244,6 +244,11 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Connexion par code à 6 chiffres (voir README : même modèle à coller dans le tableau de bord).
+[auth.email.template.magic_link]
+subject = "Ton code de connexion Intermiflouze"
+content_path = "./supabase/templates/magic_link.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

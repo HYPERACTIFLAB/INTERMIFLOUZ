@@ -1,12 +1,13 @@
 import Image from "next/image";
 import { GoogleSignInButton } from "./google-button";
 import { DevLogin } from "./dev-login";
+import { EmailLogin } from "./email-login";
 import { supabaseConfigured } from "@/lib/config";
 
 export const metadata = { title: "Connexion" };
 
 const ERREURS: Record<string, string> = {
-  "non-autorise": "Ce compte Google n'est pas autorisé à accéder à Intermiflouze.",
+  "non-autorise": "Ce compte n'est pas autorisé à accéder à Intermiflouze.",
   echec: "La connexion a échoué. Réessaie.",
 };
 
@@ -30,7 +31,12 @@ export default async function ConnexionPage({ searchParams }: PageProps<"/connex
         <div className="mt-8">
           {supabaseConfigured ? (
             <>
-              <GoogleSignInButton />
+              <EmailLogin />
+              {process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1" && (
+                <div className="mt-4">
+                  <GoogleSignInButton />
+                </div>
+              )}
               {process.env.NODE_ENV === "development" && <DevLogin />}
             </>
           ) : (
