@@ -1,6 +1,8 @@
 # Intermiflouze — Architecture et modèle de données
 
-> Validée le 11/10/2026 (stack, connexion Google, déclaration URSSAF mensuelle, pas de TVA).
+> Validée le 11/10/2026 : stack, connexion Google ; micro-entreprise artisanale (photo, NAF 7420Z, BIC
+> prestations de services), déclaration URSSAF mensuelle, franchise de TVA, versement libératoire,
+> sans ACRE, active depuis le 12/08/2026.
 
 ---
 
@@ -112,11 +114,16 @@ Extrait (les valeurs seront vérifiées une par une à l'étape b, avec toi) :
     "franchises": { "conges_payes": { "...": "..." }, "salaires": { "...": "..." }, "delai_attente_jours": 7 }
   },
   "micro_entreprise": {
-    "plafond_ca_bnc": { "valeur": null, "a_verifier": true },
+    "categorie": "BIC prestations de services (artisan, NAF 7420Z)",
+    "date_debut_activite": "2026-08-12",
+    "plafond_ca_prestations": { "valeur": null, "a_verifier": true },
     "seuil_franchise_tva": { "valeur": null, "a_verifier": true },
-    "taux_cotisations_bnc": { "valeur": null, "a_verifier": true },
+    "taux_cotisations": { "valeur": null, "a_verifier": true },
+    "versement_liberatoire": { "actif": true, "taux": null, "a_verifier": true },
+    "contribution_formation_pro": { "valeur": null, "a_verifier": true },
     "periodicite_declaration": "mensuelle",
-    "franchise_tva": true
+    "franchise_tva": true,
+    "acre": false
   }
 }
 ```
