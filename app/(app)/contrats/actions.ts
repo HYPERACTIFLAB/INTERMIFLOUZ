@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireDb } from "@/lib/data/db";
 import { parseEurosEnCentimes, parseNombre } from "@/lib/format";
-import { extraireContrat, ExtractionError } from "@/lib/extraction/claude";
-import { SUPPORTED_MIME, extractionEnabled, type SupportedMime } from "@/lib/extraction/config";
+import { SUPPORTED_MIME, extractionEnabled } from "@/lib/extraction/config";
+import { lancerExtraction } from "@/lib/extraction/run";
 import type { DocumentType } from "@/lib/data/types";
 
 export type FormState = { error?: string };
@@ -208,60 +208,30 @@ async function enregistrerDocument(input: NouveauDocument) {
 }
 
 /**
- * Après le dépôt d'un PDF ou d'une photo : crée la fiche document puis,
- * si une clé Claude est configurée, lance la lecture automatique.
+ * Après le dépôt d'un PDF ou d'une photo : crée la fiche document.
+ * `lecture` indique si une lecture par Claude doit être lancée (clé configurée).
  */
-export async function analyserDocument(input: NouveauDocument): Promise<{ documentId?: string; error?: string }> {
-  let documentId: string;
-  let db: Db;
-  let doc: NouveauDocument;
+export async function creerDocumentImport(
+  input: NouveauDocument,
+): Promise<{ documentId?: string; lecture?: boolean; error?: string }> {
   try {
-    ({ db, doc, documentId } = await enregistrerDocument(input));
+    const { db, documentId } = await enregistrerDocument(input);
+    const lecture = extractionEnabled();
+    if (lecture) await db.supabase.from("documents").update({ extraction_statut: "en_cours" }).eq("id", documentId);
+    return { documentId, lecture };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erreur inconnue." };
   }
+}
 
-  if (!extractionEnabled()) return { documentId };
-
-  await db.supabase.from("documents").update({ extraction_statut: "en_cours" }).eq("id", documentId);
-
-  const { data: fichier, error: dlError } = await db.supabase.storage.from("documents").download(doc.chemin);
-  if (dlError || !fichier) {
-    await db.supabase
-      .from("documents")
-      .update({ extraction_statut: "erreur", extraction_erreur: "Fichier introuvable." })
-      .eq("id", documentId);
-    return { documentId };
-  }
-
-  try {
-    const result = await extraireContrat(Buffer.from(await fichier.arrayBuffer()), doc.mime as SupportedMime);
-    await Promise.all([
-      db.supabase
-        .from("documents")
-        .update({
-          extraction_statut: "a_valider",
-          extraction_brute: result.extraction,
-          type: result.extraction.type_document === "autre" ? doc.type : result.extraction.type_document,
-        })
-        .eq("id", documentId),
-      db.supabase.from("usages_ia").insert({
-        document_id: documentId,
-        modele: result.modele,
-        tokens_entree: result.tokensEntree,
-        tokens_sortie: result.tokensSortie,
-        cout_estime_usd: result.coutUsd,
-      }),
-    ]);
-  } catch (e) {
-    const message = e instanceof ExtractionError ? e.message : "La lecture automatique a échoué.";
-    if (!(e instanceof ExtractionError)) console.error(e);
-    await db.supabase
-      .from("documents")
-      .update({ extraction_statut: "erreur", extraction_erreur: message })
-      .eq("id", documentId);
-  }
-  return { documentId };
+/**
+ * Lecture par Claude directement dans l'action serveur. Sert hors Netlify
+ * (développement local), là où la tâche de fond n'existe pas.
+ */
+export async function extraireMaintenant(documentId: string) {
+  if (!extractionEnabled()) return;
+  const { supabase } = await requireDb();
+  await lancerExtraction(supabase, z.string().uuid().parse(documentId));
 }
 
 /** Rattache un fichier supplémentaire (fiche de paie, AEM…) à un contrat existant. */

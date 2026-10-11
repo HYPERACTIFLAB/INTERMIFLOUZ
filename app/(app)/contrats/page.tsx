@@ -45,7 +45,7 @@ export default async function ContratsPage() {
       .from("documents")
       .select("id, nom_fichier")
       .is("contrat_id", null)
-      .in("extraction_statut", ["a_valider", "erreur", "aucune"])
+      .in("extraction_statut", ["a_valider", "erreur", "aucune", "en_cours"])
       .in("type", ["contrat", "fiche_paie", "aem"])
       .order("created_at", { ascending: false }),
     usageIaDuMois(db.supabase),

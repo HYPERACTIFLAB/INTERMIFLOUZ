@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, FileUp, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_FILE_BYTES, SUPPORTED_MIME } from "@/lib/extraction/config";
-import { ajouterDocument, analyserDocument, type NouveauDocument } from "./actions";
+import { ajouterDocument, creerDocumentImport, extraireMaintenant, type NouveauDocument } from "./actions";
 
 type Etat = { etape: "choix" } | { etape: "envoi" } | { etape: "lecture" } | { etape: "erreur"; message: string };
 
@@ -16,15 +16,45 @@ const EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
 };
 
+/**
+ * Lance la lecture par Claude en tâche de fond (Netlify), puis attend le résultat.
+ * Sans tâche de fond disponible (développement local), lit directement.
+ */
+async function lireDocument(documentId: string) {
+  const supabase = createClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  const reponse = token
+    ? await fetch("/.netlify/functions/extraction-background", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId }),
+      }).catch(() => null)
+    : null;
+
+  if (reponse?.status !== 202) {
+    await extraireMaintenant(documentId);
+    return;
+  }
+
+  // Attend la fin de la lecture (3 minutes maximum).
+  const fin = Date.now() + 180_000;
+  while (Date.now() < fin) {
+    await new Promise((r) => setTimeout(r, 2500));
+    const { data: doc } = await supabase.from("documents").select("extraction_statut").eq("id", documentId).maybeSingle();
+    if (doc && doc.extraction_statut !== "en_cours") return;
+  }
+}
+
 type Props = {
   userId: string;
   /** Mode import : lecture par Claude puis écran de vérification. */
   mode: "import" | "ajout";
   contratId?: string;
-  lectureActive?: boolean;
 };
 
-export function Uploader({ userId, mode, contratId, lectureActive = true }: Props) {
+export function Uploader({ userId, mode, contratId }: Props) {
   const router = useRouter();
   const [etat, setEtat] = useState<Etat>({ etape: "choix" });
   const [type, setType] = useState<NouveauDocument["type"]>(mode === "import" ? "contrat" : "fiche_paie");
@@ -70,11 +100,14 @@ export function Uploader({ userId, mode, contratId, lectureActive = true }: Prop
       return;
     }
 
-    if (lectureActive) setEtat({ etape: "lecture" });
-    const res = await analyserDocument(doc);
+    const res = await creerDocumentImport(doc);
     if (res.error || !res.documentId) {
       setEtat({ etape: "erreur", message: res.error ?? "Erreur inconnue." });
       return;
+    }
+    if (res.lecture) {
+      setEtat({ etape: "lecture" });
+      await lireDocument(res.documentId);
     }
     router.push(`/contrats/importer/${res.documentId}`);
   }

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmButton } from "@/components/ui";
 import { DemoNotice } from "@/components/states";
@@ -52,6 +53,13 @@ export default async function VerifierImportPage({ params }: PageProps<"/contrat
         description={doc.nom_fichier}
         back={{ href: "/contrats", label: "Contrats" }}
       />
+
+      {doc.extraction_statut === "en_cours" && (
+        <p className="mb-4 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent" aria-live="polite">
+          Claude lit encore le document… La fiche se remplira toute seule dans quelques secondes.
+          <AutoRefresh />
+        </p>
+      )}
 
       {doc.extraction_statut === "erreur" && (
         <p className="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">

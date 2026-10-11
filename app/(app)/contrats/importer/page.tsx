@@ -32,7 +32,7 @@ export default async function ImporterPage() {
             </p>
           )}
           <div className="card p-4 md:p-6">
-            <Uploader userId={db.user.id} mode="import" lectureActive={lecture} />
+            <Uploader userId={db.user.id} mode="import" />
           </div>
         </>
       )}
