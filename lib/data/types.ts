@@ -43,6 +43,8 @@ export type Contrat = {
   statut_aem: StatutAem;
   date_reception_aem: string | null;
   source: "manuel" | "import_ia";
+  paye: boolean;
+  date_paiement: string | null;
   champs_incertains: string[];
   notes: string | null;
   organisation?: Pick<Organisation, "id" | "nom"> | null;

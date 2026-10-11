@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { extraireContrat, ExtractionError } from "./core";
+import { extraireContrat, extraireJustificatif, ExtractionError } from "./core";
 import { SUPPORTED_MIME, type SupportedMime } from "./config";
 
 /**
@@ -26,13 +26,18 @@ export async function lancerExtraction(supabase: SupabaseClient, documentId: str
   if (error || !fichier) return echec("Fichier introuvable.");
 
   try {
-    const result = await extraireContrat(Buffer.from(await fichier.arrayBuffer()), doc.mime as SupportedMime);
+    const contenu = Buffer.from(await fichier.arrayBuffer());
+    const result =
+      doc.type === "justificatif"
+        ? await extraireJustificatif(contenu, doc.mime as SupportedMime)
+        : await extraireContrat(contenu, doc.mime as SupportedMime);
     await supabase
       .from("documents")
       .update({
         extraction_statut: "a_valider",
         extraction_brute: result.extraction,
-        type: result.extraction.type_document,
+        // Pour les documents de paie, Claude corrige le type (contrat, bulletin, AEM…).
+        type: "type_document" in result.extraction ? result.extraction.type_document : doc.type,
       })
       .eq("id", documentId);
     await supabase.from("usages_ia").insert({

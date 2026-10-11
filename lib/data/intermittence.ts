@@ -32,10 +32,18 @@ export async function chargerSituation(supabase: SupabaseClient): Promise<Situat
 }
 
 /** Tous les contrats, au format du moteur de calcul. */
-export async function chargerContratsCalcul(supabase: SupabaseClient): Promise<ContratCalcul[]> {
+export type ContratTableau = ContratCalcul & {
+  salaire_net: number | null;
+  paye: boolean;
+  statut_aem: "a_recevoir" | "recue" | "transmise";
+};
+
+export async function chargerContratsCalcul(supabase: SupabaseClient): Promise<ContratTableau[]> {
   const { data } = await supabase
     .from("contrats")
-    .select("id, date_debut, date_fin, heures, cachets, salaire_brut, jours_travailles, poste, annexe, organisation:organisations(nom)")
+    .select(
+      "id, date_debut, date_fin, heures, cachets, salaire_brut, salaire_net, paye, statut_aem, jours_travailles, poste, annexe, organisation:organisations(nom)",
+    )
     .order("date_debut");
   return (data ?? []).map((c) => ({
     id: c.id as string,
@@ -44,6 +52,9 @@ export async function chargerContratsCalcul(supabase: SupabaseClient): Promise<C
     heures: Number(c.heures),
     cachets: c.cachets as number,
     salaire_brut: c.salaire_brut as number | null,
+    salaire_net: c.salaire_net as number | null,
+    paye: c.paye as boolean,
+    statut_aem: c.statut_aem as ContratTableau["statut_aem"],
     jours_travailles: (c.jours_travailles as string[]) ?? [],
     poste: c.poste as string | null,
     annexe: c.annexe as string,

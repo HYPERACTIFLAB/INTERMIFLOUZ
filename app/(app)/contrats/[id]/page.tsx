@@ -25,7 +25,7 @@ import { getDb } from "@/lib/data/db";
 import { lienTemporaire, listNomsProjets, listOrganisations } from "@/lib/data/queries";
 import { LIBELLES_AEM, LIBELLES_ANNEXE, LIBELLES_DOCUMENT, type Contrat, type DocumentRow } from "@/lib/data/types";
 import { formatDate, formatEuros, formatNombre, formatPeriodeLongue } from "@/lib/format";
-import { deleteContrat, deleteDocument, updateStatutAem } from "../actions";
+import { deleteContrat, deleteDocument, marquerPaye, updateStatutAem } from "../actions";
 import { ContratForm } from "../contrat-form";
 import { valeursDepuisContrat } from "../form-values";
 import { Uploader } from "../uploader";
@@ -104,6 +104,24 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
               </div>
             ))}
           </dl>
+        </section>
+
+        <section aria-labelledby="salaire" className="card flex flex-wrap items-center justify-between gap-3 p-4 md:p-6">
+          <div>
+            <h2 id="salaire" className="font-semibold">Salaire</h2>
+            <p className="mt-1 text-sm text-muted">
+              {contrat.paye
+                ? `Perçu${contrat.date_paiement ? ` (noté le ${formatDate(contrat.date_paiement)})` : ""}`
+                : `Pas encore perçu${contrat.salaire_net ? ` · ${formatEuros(contrat.salaire_net)} net attendus` : ""}`}
+            </p>
+          </div>
+          <form action={marquerPaye}>
+            <input type="hidden" name="id" value={contrat.id} />
+            <input type="hidden" name="paye" value={contrat.paye ? "0" : "1"} />
+            <button className={contrat.paye ? "btn-secondary text-sm" : "btn-primary text-sm"}>
+              {contrat.paye ? "Marquer « pas encore perçu »" : "Marquer « perçu »"}
+            </button>
+          </form>
         </section>
 
         <section aria-labelledby="aem" className="card p-4 md:p-6">

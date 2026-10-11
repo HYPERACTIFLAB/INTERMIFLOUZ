@@ -320,20 +320,39 @@ export async function rattacherAuContrat(formData: FormData) {
   redirect(suivant ? `/contrats/importer/${suivant}?suite=1` : `/contrats/${contratId}`);
 }
 
-/** Une AEM vient d'être rattachée : le contrat passe en « AEM reçue » (s'il ne l'était pas déjà). */
+/**
+ * Des documents viennent d'être rattachés à un contrat :
+ * une AEM → « AEM reçue » ; un bulletin de paie → salaire considéré comme perçu.
+ */
 async function marquerAemRecue(supabase: Db["supabase"], contratId: string, documentIds: string[]) {
   if (!documentIds.length) return;
-  const { count } = await supabase
-    .from("documents")
-    .select("id", { count: "exact", head: true })
-    .in("id", documentIds)
-    .eq("type", "aem");
-  if (!count) return;
+  const { data: docs } = await supabase.from("documents").select("type").in("id", documentIds);
+  const types = new Set((docs ?? []).map((d) => d.type as string));
+  const jour = new Date().toISOString().slice(0, 10);
+  if (types.has("aem")) {
+    await supabase
+      .from("contrats")
+      .update({ statut_aem: "recue", date_reception_aem: jour })
+      .eq("id", contratId)
+      .eq("statut_aem", "a_recevoir");
+  }
+  if (types.has("fiche_paie")) {
+    await supabase.from("contrats").update({ paye: true, date_paiement: jour }).eq("id", contratId).eq("paye", false);
+  }
+}
+
+/** Salaire perçu / pas encore perçu. */
+export async function marquerPaye(formData: FormData) {
+  const { supabase } = await requireDb();
+  const id = z.string().uuid().parse(formData.get("id"));
+  const paye = formData.get("paye") === "1";
   await supabase
     .from("contrats")
-    .update({ statut_aem: "recue", date_reception_aem: new Date().toISOString().slice(0, 10) })
-    .eq("id", contratId)
-    .eq("statut_aem", "a_recevoir");
+    .update({ paye, date_paiement: paye ? new Date().toISOString().slice(0, 10) : null })
+    .eq("id", id);
+  revalidatePath("/");
+  revalidatePath("/contrats");
+  revalidatePath(`/contrats/${id}`);
 }
 
 /** Identifiants de documents envoyés par un formulaire (cases à cocher ou champ caché). */

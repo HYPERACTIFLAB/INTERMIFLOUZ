@@ -14,7 +14,7 @@ frais, devis/factures, finances et agenda.
 | 0 | Socle : connexion (code par e-mail), menu, installation PWA | ✅ |
 | a | Contacts, contrats + import PDF intelligent | ✅ |
 | b | Compteur d'heures, projection, récap d'actualisation, règles modifiables | ✅ |
-| c | Notes de frais avec scan | à venir |
+| c | Notes de frais avec scan + page d'accueil (tableau de bord) | ✅ |
 | d | Micro-entreprise + devis/factures | à venir |
 | e | Tableau de bord finances + simulateur | à venir |
 | f | Google Agenda | à venir |
@@ -52,6 +52,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | `20261011000001_etape_a_contrats.sql` | a : contacts, contrats, documents |
 | `20261011000002_securite_rls_auto_enable.sql` | sécurité (option « automatic RLS ») |
 | `20261011000003_etape_b_intermittence.sql` | b : situation d'intermittence, règles modifiées |
+| `20261011000004_etape_c_frais_paiements.sql` | c : notes de frais, salaire perçu ou non |
 
 ### 1 ter. Connexion
 

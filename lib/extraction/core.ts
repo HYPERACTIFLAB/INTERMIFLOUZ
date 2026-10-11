@@ -1,7 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { ContratExtraction } from "./contrat-schema";
-import { ClaudeContratFormat, normaliser, type ClaudeContrat } from "./claude-format";
+import { z } from "zod";
+import { ClaudeContratFormat, normaliser } from "./claude-format";
+import {
+  ClaudeJustificatifFormat,
+  CONSIGNE_JSON_JUSTIFICATIF,
+  normaliserJustificatif,
+  SYSTEM_JUSTIFICATIF,
+} from "./justificatif";
 import { EXTRACTION_MODEL, estimateCostUsd, type SupportedMime } from "./config";
 
 const SYSTEM = `Tu lis des documents administratifs français d'un technicien intermittent du spectacle (annexe 8) : contrats de travail (CDDU), fiches de paie, attestations employeur mensuelles (AEM).
@@ -28,7 +35,7 @@ jours_travailles, heures, cachets, salaire_brut, salaire_net (tous des chaînes,
 champs_incertains (tableau de noms de champs), remarques (chaîne).`;
 
 /** Extrait et valide l'objet JSON d'une réponse texte. */
-function lireJson(content: Anthropic.Beta.BetaContentBlock[]): ClaudeContrat | null {
+function lireJson<T>(content: Anthropic.Beta.BetaContentBlock[], schema: z.ZodType<T>): T | null {
   const texte = content
     .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
     .map((b) => b.text)
@@ -37,14 +44,17 @@ function lireJson(content: Anthropic.Beta.BetaContentBlock[]): ClaudeContrat | n
   const fin = texte.lastIndexOf("}");
   if (debut < 0 || fin <= debut) return null;
   try {
-    const r = ClaudeContratFormat.safeParse(JSON.parse(texte.slice(debut, fin + 1)));
+    const r = schema.safeParse(JSON.parse(texte.slice(debut, fin + 1)));
     return r.success ? r.data : null;
   } catch {
     return null;
   }
 }
 
-export async function extraireContrat(file: Buffer, mime: SupportedMime): Promise<ExtractionResult> {
+type Lecture<T> = { schema: z.ZodType<T>; system: string; consigneJson: string };
+
+/** Envoie un document à Claude avec un format de réponse imposé (repli en JSON libre si refusé). */
+async function lire<T>(file: Buffer, mime: SupportedMime, lecture: Lecture<T>) {
   // trim : un espace ou un retour à la ligne collé avec la clé la rend invalide.
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim() });
   const data = file.toString("base64");
@@ -62,9 +72,9 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
         output_config: avecFormat
-          ? { effort: "medium", format: betaZodOutputFormat(ClaudeContratFormat) }
+          ? { effort: "medium", format: betaZodOutputFormat(lecture.schema) }
           : { effort: "medium" },
-        system: avecFormat ? SYSTEM : SYSTEM + "\n\n" + CONSIGNE_JSON,
+        system: avecFormat ? lecture.system : lecture.system + "\n\n" + lecture.consigneJson,
         messages: [
           {
             role: "user",
@@ -75,16 +85,16 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
       .finalMessage();
 
   let message;
-  let parsed: ClaudeContrat | null = null;
+  let parsed: T | null = null;
   try {
     try {
       message = await demander(true);
-      parsed = message.parsed_output;
+      parsed = message.parsed_output as T | null;
     } catch (error) {
       // Schéma refusé par l'API : on redemande sans format imposé, en JSON libre.
       if (!(error instanceof Anthropic.BadRequestError) || !/grammar|schema/i.test(error.message)) throw error;
       message = await demander(false);
-      parsed = lireJson(message.content);
+      parsed = lireJson(message.content, lecture.schema);
     }
   } catch (error) {
     // Détail technique (code HTTP, identifiant de requête) pour pouvoir diagnostiquer.
@@ -124,14 +134,28 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
     throw new ExtractionError("Claude n'a pas pu traiter ce document. Saisis le contrat à la main.");
   }
   if (message.stop_reason === "max_tokens" || !parsed) {
-    throw new ExtractionError("La lecture du document n'a pas abouti. Réessaie ou saisis le contrat à la main.");
+    throw new ExtractionError("La lecture du document n'a pas abouti. Réessaie ou remplis la fiche à la main.");
   }
 
   return {
-    extraction: normaliser(parsed),
+    parsed,
     modele: message.model,
     tokensEntree,
     tokensSortie,
     coutUsd: estimateCostUsd(message.model, tokensEntree, tokensSortie),
   };
+}
+
+export async function extraireContrat(file: Buffer, mime: SupportedMime): Promise<ExtractionResult> {
+  const r = await lire(file, mime, { schema: ClaudeContratFormat, system: SYSTEM, consigneJson: CONSIGNE_JSON });
+  return { ...r, extraction: normaliser(r.parsed) };
+}
+
+export async function extraireJustificatif(file: Buffer, mime: SupportedMime) {
+  const r = await lire(file, mime, {
+    schema: ClaudeJustificatifFormat,
+    system: SYSTEM_JUSTIFICATIF,
+    consigneJson: CONSIGNE_JSON_JUSTIFICATIF,
+  });
+  return { ...r, extraction: normaliserJustificatif(r.parsed) };
 }
