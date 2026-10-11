@@ -141,6 +141,7 @@ export async function saveContrat(_: FormState, formData: FormData): Promise<For
       .from("documents")
       .update({ contrat_id: contratId, extraction_statut: "validee" })
       .in("id", documentIds);
+    await marquerAemRecue(db.supabase, contratId!, documentIds);
     suivant = await lotSuivant(db.supabase);
   }
 
@@ -241,7 +242,8 @@ export async function extraireMaintenant(documentId: string) {
 /** Rattache un fichier supplémentaire (fiche de paie, AEM…) à un contrat existant. */
 export async function ajouterDocument(input: NouveauDocument): Promise<{ error?: string }> {
   try {
-    const { doc } = await enregistrerDocument(input);
+    const { db, doc, documentId } = await enregistrerDocument(input);
+    if (doc.contratId) await marquerAemRecue(db.supabase, doc.contratId, [documentId]);
     revalidatePath(`/contrats/${doc.contratId}`);
     return {};
   } catch (e) {
@@ -310,11 +312,28 @@ export async function rattacherAuContrat(formData: FormData) {
     .from("documents")
     .update({ contrat_id: contratId, extraction_statut: "validee" })
     .in("id", docs.map((d) => d.id as string));
+  await marquerAemRecue(supabase, contratId, docs.map((d) => d.id as string));
 
   revalidatePath("/contrats");
   revalidatePath(`/contrats/${contratId}`);
   const suivant = await lotSuivant(supabase);
   redirect(suivant ? `/contrats/importer/${suivant}?suite=1` : `/contrats/${contratId}`);
+}
+
+/** Une AEM vient d'être rattachée : le contrat passe en « AEM reçue » (s'il ne l'était pas déjà). */
+async function marquerAemRecue(supabase: Db["supabase"], contratId: string, documentIds: string[]) {
+  if (!documentIds.length) return;
+  const { count } = await supabase
+    .from("documents")
+    .select("id", { count: "exact", head: true })
+    .in("id", documentIds)
+    .eq("type", "aem");
+  if (!count) return;
+  await supabase
+    .from("contrats")
+    .update({ statut_aem: "recue", date_reception_aem: new Date().toISOString().slice(0, 10) })
+    .eq("id", contratId)
+    .eq("statut_aem", "a_recevoir");
 }
 
 /** Identifiants de documents envoyés par un formulaire (cases à cocher ou champ caché). */

@@ -6,6 +6,7 @@ import { EXTRACTION_MODEL, estimateCostUsd, type SupportedMime } from "./config"
 
 const SYSTEM = `Tu lis des documents administratifs français d'un technicien intermittent du spectacle (annexe 8) : contrats de travail (CDDU), fiches de paie, attestations employeur mensuelles (AEM).
 Extrais uniquement ce qui figure dans le document. N'invente rien : si une information est absente, laisse le champ vide (""). Liste dans champs_incertains les champs lus avec un doute ou déduits.
+type_document : « contrat » pour un contrat de travail, « fiche_paie » pour un bulletin de salaire, « aem » pour une attestation employeur mensuelle ; tout le reste (certificat d'emploi Congés Spectacles, attestation France Travail, relevé…) est « autre ».
 Les dates sont au format AAAA-MM-JJ. Les montants sont en euros, avec un point décimal.
 Pour une fiche de paie, les dates sont celles de la période travaillée, et les heures sont celles déclarées pour cette période.
 Si le document indique des cachets plutôt que des heures, renseigne cachets et laisse heures vide.`;

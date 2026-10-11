@@ -49,6 +49,10 @@ export default async function VerifierImportPage({ params, searchParams }: PageP
     const trouvee = organisations.find((o) => memeEmployeur({ siret: o.siret, nom: o.nom }, employeur)) ?? null;
     form = valeursDepuisExtraction(e, trouvee);
   }
+  // Une AEM fait partie du lot : elle est donc reçue.
+  if (lot.docs.some((d) => d.type === "aem")) {
+    form = { ...form, valeurs: { ...form.valeurs, statut_aem: "recue", date_reception_aem: new Date().toISOString().slice(0, 10) } };
+  }
 
   const premier = lot.docs[0];
   const restants = lots.length - 1;

@@ -32,7 +32,7 @@ export async function lancerExtraction(supabase: SupabaseClient, documentId: str
       .update({
         extraction_statut: "a_valider",
         extraction_brute: result.extraction,
-        type: result.extraction.type_document === "autre" ? doc.type : result.extraction.type_document,
+        type: result.extraction.type_document,
       })
       .eq("id", documentId);
     await supabase.from("usages_ia").insert({
