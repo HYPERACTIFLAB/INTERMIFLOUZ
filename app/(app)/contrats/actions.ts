@@ -261,3 +261,15 @@ export async function abandonnerImport(formData: FormData) {
   await deleteDocument(formData);
   redirect("/contrats");
 }
+
+/** Remet un document en attente de lecture (bouton « Relancer la lecture »). */
+export async function preparerRelance(documentId: string): Promise<{ error?: string }> {
+  if (!extractionEnabled()) return { error: "La lecture automatique n'est pas configurée." };
+  const { supabase } = await requireDb();
+  const { error } = await supabase
+    .from("documents")
+    .update({ extraction_statut: "en_cours", extraction_erreur: null })
+    .eq("id", z.string().uuid().parse(documentId))
+    .is("contrat_id", null);
+  return error ? { error: error.message } : {};
+}

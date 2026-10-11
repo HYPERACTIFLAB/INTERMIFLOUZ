@@ -11,6 +11,8 @@ import { ContratExtractionSchema } from "@/lib/extraction/contrat-schema";
 import { abandonnerImport } from "../../actions";
 import { ContratForm } from "../../contrat-form";
 import { DocumentPreview } from "../../document-preview";
+import { RelancerLecture } from "./relancer";
+import { extractionEnabled } from "@/lib/extraction/config";
 import { VALEURS_VIDES, valeursDepuisExtraction } from "../../form-values";
 
 export const metadata = { title: "Vérifier l'import" };
@@ -62,9 +64,12 @@ export default async function VerifierImportPage({ params }: PageProps<"/contrat
       )}
 
       {doc.extraction_statut === "erreur" && (
-        <p className="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
-          {doc.extraction_erreur ?? "La lecture automatique a échoué."} Tu peux remplir la fiche à la main ; le document y sera rattaché.
-        </p>
+        <div className="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+          <p>
+            {doc.extraction_erreur ?? "La lecture automatique a échoué."} Tu peux remplir la fiche à la main ; le document y sera rattaché.
+          </p>
+          {extractionEnabled() && <RelancerLecture documentId={doc.id} />}
+        </div>
       )}
 
       {extraction.success && (
@@ -99,6 +104,7 @@ export default async function VerifierImportPage({ params }: PageProps<"/contrat
 
         <div className="card p-4 md:p-6">
           <ContratForm
+            key={doc.extraction_statut}
             valeurs={form.valeurs}
             organisations={organisations}
             projets={projets}

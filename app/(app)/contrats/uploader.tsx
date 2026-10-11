@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Camera, FileUp, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_FILE_BYTES, SUPPORTED_MIME } from "@/lib/extraction/config";
-import { ajouterDocument, creerDocumentImport, extraireMaintenant, type NouveauDocument } from "./actions";
+import { ajouterDocument, creerDocumentImport, type NouveauDocument } from "./actions";
+import { lireDocument } from "./lecture";
 
 type Etat = { etape: "choix" } | { etape: "envoi" } | { etape: "lecture" } | { etape: "erreur"; message: string };
 
@@ -15,37 +16,6 @@ const EXTENSIONS: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
 };
-
-/**
- * Lance la lecture par Claude en tâche de fond (Netlify), puis attend le résultat.
- * Sans tâche de fond disponible (développement local), lit directement.
- */
-async function lireDocument(documentId: string) {
-  const supabase = createClient();
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const reponse = token
-    ? await fetch("/.netlify/functions/extraction-background", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId }),
-      }).catch(() => null)
-    : null;
-
-  if (reponse?.status !== 202) {
-    await extraireMaintenant(documentId);
-    return;
-  }
-
-  // Attend la fin de la lecture (3 minutes maximum).
-  const fin = Date.now() + 180_000;
-  while (Date.now() < fin) {
-    await new Promise((r) => setTimeout(r, 2500));
-    const { data: doc } = await supabase.from("documents").select("extraction_statut").eq("id", documentId).maybeSingle();
-    if (doc && doc.extraction_statut !== "en_cours") return;
-  }
-}
 
 type Props = {
   userId: string;

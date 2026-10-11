@@ -20,7 +20,8 @@ export type ExtractionResult = {
 export class ExtractionError extends Error {}
 
 export async function extraireContrat(file: Buffer, mime: SupportedMime): Promise<ExtractionResult> {
-  const client = new Anthropic();
+  // trim : un espace ou un retour à la ligne collé avec la clé la rend invalide.
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim() });
   const data = file.toString("base64");
 
   const fichier: Anthropic.Beta.BetaContentBlockParam =
@@ -46,16 +47,22 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
     });
     message = await stream.finalMessage();
   } catch (error) {
+    // Détail technique (code HTTP, identifiant de requête) pour pouvoir diagnostiquer.
+    const detail =
+      error instanceof Anthropic.APIError ? ` [${error.status ?? "?"} ${error.requestID ?? ""}]`.replace(" ]", "]") : "";
     if (error instanceof Anthropic.AuthenticationError) {
-      throw new ExtractionError("La clé API Claude est invalide. Vérifie ANTHROPIC_API_KEY.");
+      throw new ExtractionError(
+        "La clé API Claude est refusée : vérifie qu'elle est active dans Claude Console et recopiée en entier dans ANTHROPIC_API_KEY." + detail,
+      );
     } else if (error instanceof Anthropic.RateLimitError) {
-      throw new ExtractionError("Trop de demandes en même temps. Réessaie dans une minute.");
+      throw new ExtractionError("Trop de demandes en même temps. Réessaie dans une minute." + detail);
     } else if (error instanceof Anthropic.BadRequestError || error instanceof Anthropic.PermissionDeniedError) {
       throw new ExtractionError(
-        "Claude a refusé la demande. Vérifie que ton crédit Claude n'est pas épuisé (console.anthropic.com → Billing) et que le fichier est lisible.",
+        "Claude a refusé la demande. Vérifie que ton crédit Claude n'est pas épuisé (Claude Console → Billing) et que le fichier est lisible." +
+          detail,
       );
     } else if (error instanceof Anthropic.APIError) {
-      throw new ExtractionError("Le service Claude est momentanément indisponible. Réessaie plus tard.");
+      throw new ExtractionError("Le service Claude est momentanément indisponible. Réessaie plus tard." + detail);
     }
     throw error;
   }
