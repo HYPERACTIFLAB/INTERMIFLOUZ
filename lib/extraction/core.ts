@@ -1,13 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { ContratExtractionSchema, type ContratExtraction } from "./contrat-schema";
+import type { ContratExtraction } from "./contrat-schema";
+import { ClaudeContratFormat, normaliser } from "./claude-format";
 import { EXTRACTION_MODEL, estimateCostUsd, type SupportedMime } from "./config";
 
 const SYSTEM = `Tu lis des documents administratifs français d'un technicien intermittent du spectacle (annexe 8) : contrats de travail (CDDU), fiches de paie, attestations employeur mensuelles (AEM).
-Extrais uniquement ce qui figure dans le document. N'invente rien : si une information est absente, mets valeur à null et confiance à "basse".
+Extrais uniquement ce qui figure dans le document. N'invente rien : si une information est absente, mets trouve à false, valeur à "" et confiance à "basse".
 Les dates sont au format AAAA-MM-JJ. Les montants sont en euros, avec un point décimal.
 Pour une fiche de paie, les dates sont celles de la période travaillée, et les heures sont celles déclarées pour cette période.
-Si le document indique des cachets plutôt que des heures, renseigne cachets et laisse heures à null.`;
+Si le document indique des cachets plutôt que des heures, renseigne cachets et indique heures comme non trouvé.`;
 
 export type ExtractionResult = {
   extraction: ContratExtraction;
@@ -36,7 +37,7 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      output_config: { effort: "medium", format: betaZodOutputFormat(ContratExtractionSchema) },
+      output_config: { effort: "medium", format: betaZodOutputFormat(ClaudeContratFormat) },
       system: SYSTEM,
       messages: [
         {
@@ -48,8 +49,15 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
     message = await stream.finalMessage();
   } catch (error) {
     // Détail technique (code HTTP, identifiant de requête) pour pouvoir diagnostiquer.
+    // Message renvoyé par l'API (ex. crédit insuffisant), sans donnée sensible.
+    const apiMessage =
+      error instanceof Anthropic.APIError
+        ? ((error.error as { error?: { message?: string } } | undefined)?.error?.message ?? "").slice(0, 200)
+        : "";
     const detail =
-      error instanceof Anthropic.APIError ? ` [${error.status ?? "?"} ${error.requestID ?? ""}]`.replace(" ]", "]") : "";
+      error instanceof Anthropic.APIError
+        ? ` [${error.status ?? "?"} ${error.requestID ?? ""}${apiMessage ? " : " + apiMessage : ""}]`
+        : "";
     if (error instanceof Anthropic.AuthenticationError) {
       throw new ExtractionError(
         "La clé API Claude est refusée : vérifie qu'elle est active dans Claude Console et recopiée en entier dans ANTHROPIC_API_KEY." + detail,
@@ -81,7 +89,7 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
   }
 
   return {
-    extraction: message.parsed_output,
+    extraction: normaliser(message.parsed_output),
     modele: message.model,
     tokensEntree,
     tokensSortie,
