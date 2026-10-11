@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, FileWarning, Gauge, Receipt, Wallet } from "lucide-react";
 import { BarChart } from "@/components/bar-chart";
+import { Bouton1312 } from "@/components/bouton-1312";
 import { sousTitreContrat, titreContrat } from "@/lib/titre";
 import { PageHeader } from "@/components/page-header";
 import { SubmitButton } from "@/components/ui";
@@ -56,7 +57,7 @@ export default async function AccueilPage() {
     year: "numeric",
     timeZone: "Europe/Paris",
   }).format(new Date());
-  const header = <PageHeader title={firstName ? `Bonjour ${firstName}` : "Bonjour"} description={today} />;
+  const header = <PageHeader title={firstName ? `Bonjour ${firstName}` : "Bonjour"} description={today} actions={<Bouton1312 />} />;
 
   const db = await getDb();
   if (!db) {
