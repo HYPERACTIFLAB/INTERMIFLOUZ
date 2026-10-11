@@ -1,14 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { ContratExtraction } from "./contrat-schema";
-import { ClaudeContratFormat, normaliser } from "./claude-format";
+import { ClaudeContratFormat, normaliser, type ClaudeContrat } from "./claude-format";
 import { EXTRACTION_MODEL, estimateCostUsd, type SupportedMime } from "./config";
 
 const SYSTEM = `Tu lis des documents administratifs français d'un technicien intermittent du spectacle (annexe 8) : contrats de travail (CDDU), fiches de paie, attestations employeur mensuelles (AEM).
-Extrais uniquement ce qui figure dans le document. N'invente rien : si une information est absente, mets trouve à false, valeur à "" et confiance à "basse".
+Extrais uniquement ce qui figure dans le document. N'invente rien : si une information est absente, laisse le champ vide (""). Liste dans champs_incertains les champs lus avec un doute ou déduits.
 Les dates sont au format AAAA-MM-JJ. Les montants sont en euros, avec un point décimal.
 Pour une fiche de paie, les dates sont celles de la période travaillée, et les heures sont celles déclarées pour cette période.
-Si le document indique des cachets plutôt que des heures, renseigne cachets et indique heures comme non trouvé.`;
+Si le document indique des cachets plutôt que des heures, renseigne cachets et laisse heures vide.`;
 
 export type ExtractionResult = {
   extraction: ContratExtraction;
@@ -20,6 +20,29 @@ export type ExtractionResult = {
 
 export class ExtractionError extends Error {}
 
+const CONSIGNE_JSON = `Réponds uniquement par un objet JSON, sans texte autour, avec exactement ces clés :
+type_document ("contrat" | "fiche_paie" | "aem" | "autre"), employeur_nom, employeur_siret, employeur_numero_objet,
+employeur_adresse, projet, poste, annexe ("8" | "10" | "regime_general" | "inconnue"), date_debut, date_fin,
+jours_travailles, heures, cachets, salaire_brut, salaire_net (tous des chaînes, "" si absent),
+champs_incertains (tableau de noms de champs), remarques (chaîne).`;
+
+/** Extrait et valide l'objet JSON d'une réponse texte. */
+function lireJson(content: Anthropic.Beta.BetaContentBlock[]): ClaudeContrat | null {
+  const texte = content
+    .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  const debut = texte.indexOf("{");
+  const fin = texte.lastIndexOf("}");
+  if (debut < 0 || fin <= debut) return null;
+  try {
+    const r = ClaudeContratFormat.safeParse(JSON.parse(texte.slice(debut, fin + 1)));
+    return r.success ? r.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function extraireContrat(file: Buffer, mime: SupportedMime): Promise<ExtractionResult> {
   // trim : un espace ou un retour à la ligne collé avec la clé la rend invalide.
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim() });
@@ -30,23 +53,38 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
       ? { type: "document", source: { type: "base64", media_type: "application/pdf", data } }
       : { type: "image", source: { type: "base64", media_type: mime, data } };
 
+  const demander = (avecFormat: boolean) =>
+    client.beta.messages
+      .stream({
+        model: EXTRACTION_MODEL,
+        max_tokens: 16000,
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        output_config: avecFormat
+          ? { effort: "medium", format: betaZodOutputFormat(ClaudeContratFormat) }
+          : { effort: "medium" },
+        system: avecFormat ? SYSTEM : SYSTEM + "\n\n" + CONSIGNE_JSON,
+        messages: [
+          {
+            role: "user",
+            content: [fichier, { type: "text", text: "Extrais les informations de ce document." }],
+          },
+        ],
+      })
+      .finalMessage();
+
   let message;
+  let parsed: ClaudeContrat | null = null;
   try {
-    const stream = client.beta.messages.stream({
-      model: EXTRACTION_MODEL,
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "medium", format: betaZodOutputFormat(ClaudeContratFormat) },
-      system: SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content: [fichier, { type: "text", text: "Extrais les informations de ce document." }],
-        },
-      ],
-    });
-    message = await stream.finalMessage();
+    try {
+      message = await demander(true);
+      parsed = message.parsed_output;
+    } catch (error) {
+      // Schéma refusé par l'API : on redemande sans format imposé, en JSON libre.
+      if (!(error instanceof Anthropic.BadRequestError) || !/grammar|schema/i.test(error.message)) throw error;
+      message = await demander(false);
+      parsed = lireJson(message.content);
+    }
   } catch (error) {
     // Détail technique (code HTTP, identifiant de requête) pour pouvoir diagnostiquer.
     // Message renvoyé par l'API (ex. crédit insuffisant), sans donnée sensible.
@@ -66,7 +104,7 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
       throw new ExtractionError("Trop de demandes en même temps. Réessaie dans une minute." + detail);
     } else if (error instanceof Anthropic.BadRequestError || error instanceof Anthropic.PermissionDeniedError) {
       throw new ExtractionError(
-        "Claude a refusé la demande. Vérifie que ton crédit Claude n'est pas épuisé (Claude Console → Billing) et que le fichier est lisible." +
+        "Claude a refusé la demande (crédit épuisé, fichier illisible ou demande invalide)." +
           detail,
       );
     } else if (error instanceof Anthropic.APIError) {
@@ -84,12 +122,12 @@ export async function extraireContrat(file: Buffer, mime: SupportedMime): Promis
   if (message.stop_reason === "refusal") {
     throw new ExtractionError("Claude n'a pas pu traiter ce document. Saisis le contrat à la main.");
   }
-  if (message.stop_reason === "max_tokens" || !message.parsed_output) {
+  if (message.stop_reason === "max_tokens" || !parsed) {
     throw new ExtractionError("La lecture du document n'a pas abouti. Réessaie ou saisis le contrat à la main.");
   }
 
   return {
-    extraction: normaliser(message.parsed_output),
+    extraction: normaliser(parsed),
     modele: message.model,
     tokensEntree,
     tokensSortie,

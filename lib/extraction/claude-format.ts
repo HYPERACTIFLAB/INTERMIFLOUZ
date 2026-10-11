@@ -1,90 +1,85 @@
 import { z } from "zod";
-import type { ContratExtraction } from "./contrat-schema";
+import type { ChampContrat, ContratExtraction } from "./contrat-schema";
 
 /**
- * Format imposé à Claude. Volontairement sans valeurs « null » (unions), qui
- * alourdissent le schéma : chaque champ dit s'il a été trouvé, et les valeurs
- * sont des textes, convertis ensuite par `normaliser`.
+ * Format imposé à Claude : volontairement plat et minimal (des textes), car un
+ * schéma trop riche est refusé (« compiled grammar is too large »).
+ * Chaîne vide = information absente. Les champs incertains sont listés à part.
  */
-const confiance = z
-  .enum(["haute", "moyenne", "basse"])
-  .describe("haute = lu clairement ; moyenne = déduit ou partiellement lisible ; basse = deviné");
-
-function champ(description: string) {
-  return z
-    .object({
-      trouve: z.boolean().describe("false si l'information n'est pas dans le document"),
-      valeur: z.string().describe("La valeur, ou chaîne vide si non trouvée"),
-      confiance,
-      source: z.string().describe("Court extrait du document d'où vient la valeur (80 caractères max), ou chaîne vide"),
-    })
-    .describe(description);
-}
+const NOMS_CHAMPS = [
+  "employeur_nom",
+  "employeur_siret",
+  "employeur_numero_objet",
+  "employeur_adresse",
+  "projet",
+  "poste",
+  "annexe",
+  "date_debut",
+  "date_fin",
+  "jours_travailles",
+  "heures",
+  "cachets",
+  "salaire_brut",
+  "salaire_net",
+] as const satisfies readonly ChampContrat[];
 
 export const ClaudeContratFormat = z.object({
   type_document: z.enum(["contrat", "fiche_paie", "aem", "autre"]),
-  employeur_nom: champ("Raison sociale de l'employeur"),
-  employeur_siret: champ("SIRET de l'employeur, 14 chiffres sans espaces"),
-  employeur_numero_objet: champ("Numéro d'objet (production) Congés Spectacles / France Travail, s'il figure"),
-  employeur_adresse: champ("Adresse postale de l'employeur"),
-  projet: champ("Titre de la production, du film, du clip ou du projet"),
-  poste: champ("Emploi ou fonction occupée (ex. chef opérateur, réalisateur)"),
-  annexe: champ("Annexe d'assurance chômage : « 8 » (techniciens), « 10 » (artistes) ou « regime_general »"),
-  date_debut: champ("Premier jour du contrat ou de la période de paie, format AAAA-MM-JJ"),
-  date_fin: champ("Dernier jour du contrat ou de la période de paie, format AAAA-MM-JJ"),
-  jours_travailles: champ("Jours travaillés au format AAAA-MM-JJ séparés par des virgules, s'ils sont listés"),
-  heures: champ("Nombre total d'heures travaillées, nombre avec un point décimal (ex. 14.5)"),
-  cachets: champ("Nombre de cachets (0 si payé à l'heure)"),
-  salaire_brut: champ("Salaire brut total en euros, nombre avec un point décimal (ex. 1234.56)"),
-  salaire_net: champ("Net à payer avant impôt sur le revenu, en euros, nombre avec un point décimal"),
-  remarques: z.string().describe("Ce que l'utilisateur doit vérifier en priorité, en français, ou chaîne vide"),
+  employeur_nom: z.string().describe("Raison sociale de l'employeur"),
+  employeur_siret: z.string().describe("SIRET, 14 chiffres sans espaces"),
+  employeur_numero_objet: z.string().describe("Numéro d'objet de la production, s'il figure"),
+  employeur_adresse: z.string().describe("Adresse de l'employeur"),
+  projet: z.string().describe("Titre de la production ou du projet"),
+  poste: z.string().describe("Emploi occupé"),
+  annexe: z.enum(["8", "10", "regime_general", "inconnue"]).describe("8 = techniciens, 10 = artistes"),
+  date_debut: z.string().describe("AAAA-MM-JJ"),
+  date_fin: z.string().describe("AAAA-MM-JJ"),
+  jours_travailles: z.string().describe("Jours travaillés AAAA-MM-JJ séparés par des virgules, s'ils sont listés"),
+  heures: z.string().describe("Total des heures, ex. 14.5"),
+  cachets: z.string().describe("Nombre de cachets"),
+  salaire_brut: z.string().describe("Brut total en euros, ex. 1234.56"),
+  salaire_net: z.string().describe("Net à payer avant impôt en euros, ex. 987.65"),
+  champs_incertains: z.array(z.enum(NOMS_CHAMPS)).describe("Champs lus avec un doute ou déduits"),
+  remarques: z.string().describe("Points à vérifier en priorité, en français, ou chaîne vide"),
 });
 
 export type ClaudeContrat = z.infer<typeof ClaudeContratFormat>;
 
-type ChampBrut = ClaudeContrat["employeur_nom"];
-
-function texte(c: ChampBrut) {
-  const v = c.valeur.trim();
-  return { valeur: c.trouve && v ? v : null, confiance: c.confiance, source: c.source.trim() || null };
-}
-
-function nombre(c: ChampBrut) {
-  const brut = c.valeur.replace(/\s|€/g, "").replace(",", ".");
-  const n = Number(brut);
-  return {
-    valeur: c.trouve && brut !== "" && Number.isFinite(n) ? n : null,
-    confiance: c.confiance,
-    source: c.source.trim() || null,
-  };
-}
-
 /** Convertit la réponse de Claude dans le format interne de l'appli. */
 export function normaliser(r: ClaudeContrat): ContratExtraction {
-  const annexe = texte(r.annexe);
-  const jours = texte(r.jours_travailles);
+  const doute = (nom: ChampContrat) => (r.champs_incertains.includes(nom) ? "basse" : "haute") as "basse" | "haute";
+  const texte = (nom: ChampContrat, v: string) => {
+    const t = v.trim();
+    return { valeur: t || null, confiance: t ? doute(nom) : ("basse" as const), source: null };
+  };
+  const nombre = (nom: ChampContrat, v: string) => {
+    const brut = v.replace(/\s|€/g, "").replace(",", ".");
+    const n = Number(brut);
+    const ok = brut !== "" && Number.isFinite(n);
+    return { valeur: ok ? n : null, confiance: ok ? doute(nom) : ("basse" as const), source: null };
+  };
+  const jours = r.jours_travailles.split(/[,;\s]+/).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+
   return {
     type_document: r.type_document,
-    employeur_nom: texte(r.employeur_nom),
-    employeur_siret: texte(r.employeur_siret),
-    employeur_numero_objet: texte(r.employeur_numero_objet),
-    employeur_adresse: texte(r.employeur_adresse),
-    projet: texte(r.projet),
-    poste: texte(r.poste),
+    employeur_nom: texte("employeur_nom", r.employeur_nom),
+    employeur_siret: texte("employeur_siret", r.employeur_siret.replace(/\s/g, "")),
+    employeur_numero_objet: texte("employeur_numero_objet", r.employeur_numero_objet),
+    employeur_adresse: texte("employeur_adresse", r.employeur_adresse),
+    projet: texte("projet", r.projet),
+    poste: texte("poste", r.poste),
     annexe: {
-      ...annexe,
-      valeur: annexe.valeur === "8" || annexe.valeur === "10" || annexe.valeur === "regime_general" ? annexe.valeur : null,
+      valeur: r.annexe === "inconnue" ? null : r.annexe,
+      confiance: r.annexe === "inconnue" ? "basse" : doute("annexe"),
+      source: null,
     },
-    date_debut: texte(r.date_debut),
-    date_fin: texte(r.date_fin),
-    jours_travailles: {
-      ...jours,
-      valeur: jours.valeur ? jours.valeur.split(/[,;\s]+/).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)) : null,
-    },
-    heures: nombre(r.heures),
-    cachets: nombre(r.cachets),
-    salaire_brut: nombre(r.salaire_brut),
-    salaire_net: nombre(r.salaire_net),
+    date_debut: texte("date_debut", r.date_debut),
+    date_fin: texte("date_fin", r.date_fin),
+    jours_travailles: { valeur: jours.length ? jours : null, confiance: jours.length ? doute("jours_travailles") : "basse", source: null },
+    heures: nombre("heures", r.heures),
+    cachets: nombre("cachets", r.cachets),
+    salaire_brut: nombre("salaire_brut", r.salaire_brut),
+    salaire_net: nombre("salaire_net", r.salaire_net),
     remarques: r.remarques.trim() || null,
   };
 }
