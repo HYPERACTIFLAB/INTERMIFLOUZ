@@ -6,7 +6,7 @@ import { getDb } from "@/lib/data/db";
 import { chargerContratsCalcul, chargerRegles, chargerSituation } from "@/lib/data/intermittence";
 import { aujourdhui, joursInclus } from "@/lib/regles/dates";
 import { compteur } from "@/lib/regles/intermittence";
-import { moyennesContrats, objectifAllocation } from "@/lib/regles/objectif";
+import { estimationAuSeuil, moyennesContrats, objectifAllocation } from "@/lib/regles/objectif";
 import { AVERTISSEMENT_REGLES } from "@/lib/regles/regles";
 import { formatDate, formatEuros, formatNombre } from "@/lib/format";
 import { ObjectifForm } from "./objectif-form";
@@ -40,6 +40,7 @@ export default async function ObjectifPage() {
   const taux = situation.objectif_taux_horaire !== null ? situation.objectif_taux_horaire / 100 : (moyennes.tauxHoraire ?? 0);
   const heuresJour = situation.objectif_heures_jour ?? moyennes.heuresParJour ?? 8;
   const cible = situation.objectif_aj;
+  const auSeuil = taux > 0 ? estimationAuSeuil(r.total, r.brut / 100, taux, regles) : null;
   const o = cible ? objectifAllocation({ cible, heures: r.total, brut: r.brut / 100, tauxHoraire: taux, heuresParJour: heuresJour }, regles) : null;
 
   // Temps restant : jusqu'à la date anniversaire si les droits sont ouverts.
@@ -102,7 +103,10 @@ export default async function ObjectifPage() {
                   <Chiffre valeur={`${formatNombre(o.heures)} h`} label="heures en plus" />
                   <Chiffre valeur={o.jours !== null ? `${o.jours} j` : "—"} label="jours de travail" />
                   <Chiffre valeur={formatEuros(o.brut * 100)} label="salaires bruts en plus" />
-                  <Chiffre valeur={euros(o.actuelle)} label={o.seuilAtteint ? "estimation actuelle / jour" : "aujourd'hui (sans les 507 h)"} />
+                  <Chiffre
+                    valeur={euros(auSeuil ? auSeuil.aj.finale : o.actuelle)}
+                    label={auSeuil ? `/ jour si tu finis juste tes ${r.seuil} h` : "estimation actuelle / jour"}
+                  />
                 </div>
 
                 {moisRestants !== null && o.jours !== null && (

@@ -85,3 +85,15 @@ export function moyennesContrats(contrats: ContratCalcul[]) {
     heuresParJour: nbJours > 0 ? Math.round((avecJours.reduce((s, c) => s + Number(c.heures), 0) / nbJours) * 10) / 10 : null,
   };
 }
+
+/**
+ * Allocation estimée si les heures manquantes pour le seuil (507 h) sont faites
+ * au salaire horaire donné (en général ta moyenne). Null si le seuil est déjà atteint.
+ */
+export function estimationAuSeuil(heures: number, brut: number, tauxHoraire: number, regles: Regles) {
+  const seuil = v(regles, "seuil_heures");
+  const manquantes = Math.ceil(seuil - heures);
+  if (manquantes <= 0) return null;
+  const brutAjoute = Math.round(manquantes * tauxHoraire * 100) / 100;
+  return { manquantes, brutAjoute, aj: allocationJournaliere(brut + brutAjoute, heures + manquantes, regles) };
+}

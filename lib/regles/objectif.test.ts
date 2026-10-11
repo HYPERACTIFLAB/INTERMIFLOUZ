@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { appliquerModifications } from "./regles";
 import { allocationJournaliere } from "./intermittence";
-import { moyennesContrats, objectifAllocation } from "./objectif";
+import { estimationAuSeuil, moyennesContrats, objectifAllocation } from "./objectif";
 
 const regles = appliquerModifications([]);
 const base = { heures: 300, brut: 9000, tauxHoraire: 30, heuresParJour: 8 };
@@ -43,5 +43,17 @@ describe("moyennesContrats", () => {
       { id: "2", date_debut: "2026-02-01", date_fin: "2026-02-01", heures: 10, cachets: 0, salaire_brut: null },
     ]);
     expect(m).toEqual({ tauxHoraire: 30, heuresParJour: 10 });
+  });
+});
+
+describe("estimationAuSeuil", () => {
+  it("complète jusqu'aux 507 h au salaire moyen", () => {
+    const e = estimationAuSeuil(300, 9000, 30, regles)!;
+    expect(e.manquantes).toBe(207);
+    expect(e.brutAjoute).toBe(6210);
+    expect(e.aj.finale).toBe(allocationJournaliere(15210, 507, regles).finale);
+  });
+  it("ne dit rien si le seuil est déjà atteint", () => {
+    expect(estimationAuSeuil(520, 15000, 30, regles)).toBeNull();
   });
 });

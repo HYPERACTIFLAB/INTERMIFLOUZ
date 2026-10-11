@@ -5,6 +5,7 @@ import { DemoNotice } from "@/components/states";
 import { getDb } from "@/lib/data/db";
 import { chargerContratsCalcul, chargerRegles, chargerSituation } from "@/lib/data/intermittence";
 import { allocationJournaliere, compteur } from "@/lib/regles/intermittence";
+import { estimationAuSeuil, moyennesContrats } from "@/lib/regles/objectif";
 import { aujourdhui } from "@/lib/regles/dates";
 import { AVERTISSEMENT_REGLES } from "@/lib/regles/regles";
 import { formatDate, formatEuros, formatNombre, formatPeriode } from "@/lib/format";
@@ -27,7 +28,15 @@ export default async function IntermittencePage() {
   const r = compteur(contrats, situation, regles, jour);
   const pct = Math.min(100, (r.total / r.seuil) * 100);
   const pctAcquis = Math.min(100, (r.heures / r.seuil) * 100);
-  const aj = allocationJournaliere(r.brut / 100, Math.min(r.total, Infinity), regles);
+  const aj = allocationJournaliere(r.brut / 100, r.total, regles);
+  // Si les 507 h ne sont pas encore atteintes : estimation en les terminant à ton salaire horaire moyen.
+  const tauxMoyen = moyennesContrats(contrats).tauxHoraire ?? (r.total > 0 ? r.brut / 100 / r.total : null);
+  const auSeuil = tauxMoyen ? estimationAuSeuil(r.total, r.brut / 100, tauxMoyen, regles) : null;
+  const projete = r.projection.estimeALaDate;
+  const auRythme =
+    r.renouvellement && projete && projete > r.seuil && tauxMoyen
+      ? allocationJournaliere(r.brut / 100 + (projete - r.total) * tauxMoyen, projete, regles)
+      : null;
   const reglesAVerifier = Object.entries(regles).filter(
     ([k, v]) => k !== "_modifiees" && (v as { a_verifier?: boolean }).a_verifier,
   ).length;
@@ -111,19 +120,52 @@ export default async function IntermittencePage() {
             <h2 className="flex items-center gap-2 text-sm font-medium text-muted">
               <CalendarClock size={16} aria-hidden /> Allocation journalière estimée
             </h2>
-            <p className="mt-2 text-3xl font-semibold tabular-nums">{formatEuros(Math.round(aj.finale * 100))}</p>
-            <p className="mt-1 text-xs text-muted">
-              Avec {formatNombre(Math.round(r.total))} h et {formatEuros(r.brut)} de salaires bruts sur la période.
-              {aj.borne === "plancher" && " Montant minimum appliqué."}
-              {aj.borne === "plafond" && " Montant maximum appliqué."}
-              {situation.aj_actuelle !== null && ` Aujourd'hui : ${formatEuros(Math.round(situation.aj_actuelle * 100))}.`}
-            </p>
+            {auSeuil ? (
+              <>
+                <p className="mt-2 text-3xl font-semibold tabular-nums">{formatEuros(Math.round(auSeuil.aj.finale * 100))}</p>
+                <p className="mt-1 text-sm">
+                  Si tu termines tes {r.seuil} h{r.renouvellement ? ` d'ici le ${formatDate(r.fin)}` : ""} : encore{" "}
+                  {formatNombre(auSeuil.manquantes)} h payées {formatEuros(Math.round(tauxMoyen! * 100))} brut de l&apos;heure (ta
+                  moyenne), soit {formatEuros(Math.round(auSeuil.brutAjoute * 100))} de salaires en plus.
+                </p>
+                {auSeuil.aj.borne === "plancher" && <p className="mt-1 text-xs text-muted">Montant minimum appliqué.</p>}
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-3xl font-semibold tabular-nums">{formatEuros(Math.round(aj.finale * 100))}</p>
+                <p className="mt-1 text-xs text-muted">
+                  Avec {formatNombre(Math.round(r.total))} h et {formatEuros(r.brut)} de salaires bruts sur la période.
+                  {aj.borne === "plancher" && " Montant minimum appliqué."}
+                  {aj.borne === "plafond" && " Montant maximum appliqué."}
+                </p>
+              </>
+            )}
+            {auRythme && (
+              <p className="mt-2 text-sm">
+                À ton rythme actuel (environ {formatNombre(projete!)} h au {formatDate(r.fin)}) :{" "}
+                <span className="font-semibold tabular-nums">{formatEuros(Math.round(auRythme.finale * 100))}</span>.
+              </p>
+            )}
+            {situation.aj_actuelle !== null && (
+              <p className="mt-1 text-xs text-muted">Aujourd&apos;hui : {formatEuros(Math.round(situation.aj_actuelle * 100))} par jour.</p>
+            )}
             <details className="mt-2 text-xs text-muted">
               <summary className="cursor-pointer">Détail du calcul</summary>
-              <p className="mt-1 tabular-nums">
-                A (salaires) {formatNombre(aj.A)} € + B (heures) {formatNombre(aj.B)} € + C (fixe) {formatNombre(aj.C)} € ={" "}
-                {formatNombre(aj.brute)} €
-              </p>
+              {(() => {
+                const d = auSeuil?.aj ?? aj;
+                return (
+                  <p className="mt-1 tabular-nums">
+                    A (salaires) {formatNombre(d.A)} € + B (heures) {formatNombre(d.B)} € + C (fixe) {formatNombre(d.C)} € ={" "}
+                    {formatNombre(d.brute)} €
+                  </p>
+                );
+              })()}
+              {auSeuil && (
+                <p className="mt-1">
+                  Avec seulement les heures déjà faites ({formatNombre(Math.round(r.total))} h, {formatEuros(r.brut)}), la formule donnerait{" "}
+                  {formatEuros(Math.round(aj.finale * 100))}, mais il faut {r.seuil} h pour avoir des droits.
+                </p>
+              )}
             </details>
             {r.sansSalaire > 0 && (
               <p className="mt-2 text-xs text-warning">{r.sansSalaire} contrat(s) sans salaire brut : l&apos;estimation est trop basse.</p>
