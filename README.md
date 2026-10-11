@@ -52,9 +52,15 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | `20261011000001_etape_a_contrats.sql` | a : contacts, contrats, documents |
 | `20261011000002_securite_rls_auto_enable.sql` | sécurité (option « automatic RLS ») |
 
-### 1 ter. E-mail de connexion (code à 6 chiffres)
+### 1 ter. Connexion
 
-On se connecte avec un code reçu par e-mail. Dans Supabase : **Authentication → Emails →
+Par défaut, on se connecte avec **e-mail + mot de passe** (aucun réglage nécessaire). Le compte
+est créé dans Supabase (**Authentication → Users → Add user**), avec un mot de passe
+provisoire ; ajouter `{"doit_changer_mdp": true}` aux métadonnées oblige à en choisir un
+nouveau à la première connexion. Le mot de passe se change ensuite dans **Plus → Changer mon
+mot de passe**.
+
+Option : connexion par code reçu par e-mail (variable `NEXT_PUBLIC_EMAIL_CODE_LOGIN=1`). Dans Supabase : **Authentication → Emails →
 Magic link** (ou « Magic Link or OTP ») :
 
 - **Subject** : `Ton code de connexion Intermiflouze`

@@ -44,3 +44,20 @@ export async function verifierCode(_: CodeState, formData: FormData): Promise<Co
   }
   redirect("/");
 }
+
+export type LoginState = { email?: string; error?: string };
+
+/** Connexion par e-mail + mot de passe. */
+export async function connexionMotDePasse(_: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const refus = { email, error: "E-mail ou mot de passe incorrect." };
+  if (!email || !password || !isEmailAllowed(email)) return refus;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    return error.status === 429 ? { email, error: "Trop de tentatives. Réessaie dans quelques minutes." } : refus;
+  }
+  redirect(data.user?.user_metadata?.doit_changer_mdp ? "/mot-de-passe" : "/");
+}

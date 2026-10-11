@@ -71,5 +71,11 @@ export async function updateSession(request: NextRequest) {
 
   if (pathname === "/connexion") return withCookies(redirectTo(request, "/"));
 
+  // Mot de passe provisoire : il faut d'abord en choisir un.
+  const meta = claims.user_metadata as { doit_changer_mdp?: boolean } | undefined;
+  if (meta?.doit_changer_mdp && pathname !== "/mot-de-passe") {
+    return withCookies(redirectTo(request, "/mot-de-passe"));
+  }
+
   return response;
 }

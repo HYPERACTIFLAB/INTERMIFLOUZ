@@ -2,6 +2,7 @@ import Image from "next/image";
 import { GoogleSignInButton } from "./google-button";
 import { DevLogin } from "./dev-login";
 import { EmailLogin } from "./email-login";
+import { PasswordLogin } from "./password-login";
 import { supabaseConfigured } from "@/lib/config";
 
 export const metadata = { title: "Connexion" };
@@ -31,7 +32,7 @@ export default async function ConnexionPage({ searchParams }: PageProps<"/connex
         <div className="mt-8">
           {supabaseConfigured ? (
             <>
-              <EmailLogin />
+              {process.env.NEXT_PUBLIC_EMAIL_CODE_LOGIN === "1" ? <EmailLogin /> : <PasswordLogin />}
               {process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1" && (
                 <div className="mt-4">
                   <GoogleSignInButton />
