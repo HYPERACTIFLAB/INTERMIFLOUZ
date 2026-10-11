@@ -11,6 +11,7 @@ export type ContratCalcul = {
   salaire_brut: number | null;
   jours_travailles?: string[];
   employeur?: string | null;
+  projet?: string | null;
   poste?: string | null;
   annexe?: string;
 };

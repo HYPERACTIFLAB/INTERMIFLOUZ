@@ -8,6 +8,7 @@ import { recapMois } from "@/lib/regles/intermittence";
 import { ajouterMois, aujourdhui } from "@/lib/regles/dates";
 import { formatDate, formatEuros, formatNombre, formatPeriode } from "@/lib/format";
 import { Copier } from "./copier";
+import { titreContrat } from "@/lib/titre";
 
 export const metadata = { title: "Récap d'actualisation" };
 
@@ -37,7 +38,7 @@ export default async function ActualisationPage({ searchParams }: PageProps<"/in
     r.lignes.length ? "A travaillé : oui" : "A travaillé : non",
     ...r.lignes.map(
       (l) =>
-        `- ${l.contrat.employeur ?? "Employeur ?"} : du ${formatDate(l.debut)} au ${formatDate(l.fin)}, ${formatNombre(l.heures)} h, ${formatEuros(l.brut)} brut`,
+        `- ${l.contrat.employeur ?? "Employeur ?"}${l.contrat.projet ? ` (${l.contrat.projet})` : ""} : du ${formatDate(l.debut)} au ${formatDate(l.fin)}, ${formatNombre(l.heures)} h, ${formatEuros(l.brut)} brut`,
     ),
     `Total : ${formatNombre(r.heures)} h, ${formatEuros(r.brut)} brut`,
     "Chiffre d'affaires micro-entreprise : à compléter (étape d)",
@@ -82,7 +83,8 @@ export default async function ActualisationPage({ searchParams }: PageProps<"/in
                   <Link href={`/contrats/${l.contrat.id}`} className="block px-4 py-3 hover:bg-background">
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <span className="block truncate font-medium">{l.contrat.employeur ?? "Employeur non renseigné"}</span>
+                        <span className="block truncate font-medium">{titreContrat(l.contrat)}</span>
+                        <span className="block truncate text-sm text-muted">Employeur : {l.contrat.employeur ?? "non renseigné"}</span>
                         <span className="block text-sm text-muted">{formatPeriode(l.debut, l.fin)} · {l.jours} jour(s)</span>
                       </span>
                       <span className="shrink-0 text-right text-sm tabular-nums">

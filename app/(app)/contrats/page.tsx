@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FilePlus2, FileText, PenLine, Sparkles } from "lucide-react";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { sousTitreContrat, titreContrat } from "@/lib/titre";
 import { PageHeader } from "@/components/page-header";
 import { DemoNotice, EmptyState } from "@/components/states";
 import { getDb } from "@/lib/data/db";
@@ -71,7 +72,7 @@ export default async function ContratsPage() {
           <ul className="mt-2 divide-y divide-warning/20 text-sm">
             {lots.map((lot) => {
               const e = lot.extraction;
-              const titre = e?.employeur_nom.valeur ?? lot.docs[0].nom_fichier;
+              const titre = e?.projet.valeur ?? e?.employeur_nom.valeur ?? lot.docs[0].nom_fichier;
               const detail = e?.date_debut.valeur
                 ? formatPeriode(e.date_debut.valeur, e.date_fin.valeur ?? e.date_debut.valeur)
                 : null;
@@ -80,9 +81,11 @@ export default async function ContratsPage() {
                   <Link href={`/contrats/importer/${lot.docs[0].id}`} className="flex items-center justify-between gap-3 py-2">
                     <span className="min-w-0">
                       <span className="block truncate underline">{titre}</span>
-                      {(detail || lot.docs.length > 1) && (
+                      {(detail || lot.docs.length > 1 || e?.projet.valeur) && (
                         <span className="block text-xs text-muted">
-                          {[detail, lot.docs.length > 1 ? `${lot.docs.length} documents` : null].filter(Boolean).join(" · ")}
+                          {[e?.projet.valeur ? e.employeur_nom.valeur : null, detail, lot.docs.length > 1 ? `${lot.docs.length} documents` : null]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       )}
                     </span>
@@ -123,9 +126,11 @@ export default async function ContratsPage() {
                   <li key={c.id}>
                     <Link href={`/contrats/${c.id}`} className="flex items-start gap-3 px-4 py-3.5 hover:bg-background">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{c.organisation?.nom ?? "Employeur non renseigné"}</p>
+                        <p className="truncate font-medium">
+                          {titreContrat({ projet: c.projet?.nom, poste: c.poste, employeur: c.organisation?.nom })}
+                        </p>
                         <p className="truncate text-sm text-muted">
-                          {[c.poste, c.projet?.nom].filter(Boolean).join(" · ") || "—"}
+                          {sousTitreContrat({ projet: c.projet?.nom, poste: c.poste, employeur: c.organisation?.nom }) || "—"}
                         </p>
                         <p className="mt-0.5 text-sm text-muted">{formatPeriode(c.date_debut, c.date_fin)}</p>
                       </div>

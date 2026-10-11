@@ -9,6 +9,7 @@ import { aujourdhui } from "@/lib/regles/dates";
 import { AVERTISSEMENT_REGLES } from "@/lib/regles/regles";
 import { formatDate, formatEuros, formatNombre, formatPeriode } from "@/lib/format";
 import { SituationForm } from "./situation-form";
+import { titreContrat } from "@/lib/titre";
 
 export const metadata = { title: "Intermittence" };
 
@@ -175,8 +176,9 @@ export default async function IntermittencePage() {
                 <li key={p.contrat.id}>
                   <Link href={`/contrats/${p.contrat.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-background">
                     <span className="min-w-0">
-                      <span className="block truncate font-medium">{p.contrat.employeur ?? "Employeur non renseigné"}</span>
+                      <span className="block truncate font-medium">{titreContrat(p.contrat)}</span>
                       <span className="block text-sm text-muted">
+                        {p.contrat.employeur ? `${p.contrat.employeur} · ` : ""}
                         {formatPeriode(p.contrat.date_debut, p.contrat.date_fin)}
                         {p.part < 1 && ` · ${Math.round(p.part * 100)} % dans la période`}
                         {p.contrat.date_debut > jour && " · à venir"}

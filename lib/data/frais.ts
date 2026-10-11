@@ -35,7 +35,7 @@ export async function listNotes(supabase: SupabaseClient) {
 export async function listContratsChoix(supabase: SupabaseClient) {
   const { data } = await supabase
     .from("contrats")
-    .select("id, date_debut, date_fin, organisation_id, poste, organisation:organisations(nom)")
+    .select("id, date_debut, date_fin, organisation_id, poste, organisation:organisations(nom), projet:projets(nom)")
     .order("date_debut", { ascending: false })
     .limit(100);
   return (data ?? []).map((c) => ({
@@ -43,6 +43,12 @@ export async function listContratsChoix(supabase: SupabaseClient) {
     organisation_id: c.organisation_id as string | null,
     date_debut: c.date_debut as string,
     date_fin: c.date_fin as string,
-    libelle: `${(c.organisation as unknown as { nom: string } | null)?.nom ?? "Sans employeur"} · ${formatPeriode(c.date_debut as string, c.date_fin as string)}`,
+    libelle: [
+      (c.projet as unknown as { nom: string } | null)?.nom,
+      (c.organisation as unknown as { nom: string } | null)?.nom ?? "Sans employeur",
+      formatPeriode(c.date_debut as string, c.date_fin as string),
+    ]
+      .filter(Boolean)
+      .join(" · "),
   }));
 }

@@ -25,6 +25,7 @@ import { getDb } from "@/lib/data/db";
 import { lienTemporaire, listNomsProjets, listOrganisations } from "@/lib/data/queries";
 import { LIBELLES_AEM, LIBELLES_ANNEXE, LIBELLES_DOCUMENT, type Contrat, type DocumentRow } from "@/lib/data/types";
 import { formatDate, formatEuros, formatNombre, formatPeriodeLongue } from "@/lib/format";
+import { sousTitreContrat, titreContrat } from "@/lib/titre";
 import { deleteContrat, deleteDocument, marquerPaye, updateStatutAem } from "../actions";
 import { ContratForm } from "../contrat-form";
 import { valeursDepuisContrat } from "../form-values";
@@ -85,8 +86,8 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
   return (
     <>
       <PageHeader
-        title={contrat.poste ?? "Contrat"}
-        description={contrat.organisation?.nom}
+        title={titreContrat({ projet: contrat.projet?.nom, poste: contrat.poste, employeur: contrat.organisation?.nom })}
+        description={sousTitreContrat({ projet: contrat.projet?.nom, poste: contrat.poste, employeur: contrat.organisation?.nom })}
         back={{ href: "/contrats", label: "Contrats" }}
       />
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, FileWarning, Gauge, Receipt, Wallet } from "lucide-react";
 import { BarChart } from "@/components/bar-chart";
+import { sousTitreContrat, titreContrat } from "@/lib/titre";
 import { PageHeader } from "@/components/page-header";
 import { SubmitButton } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth";
@@ -151,7 +152,8 @@ export default async function AccueilPage() {
                 return (
                   <li key={c.id} className="flex items-center gap-3 px-4 py-3">
                     <Link href={`/contrats/${c.id}`} className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{c.employeur ?? "Employeur non renseigné"}</span>
+                      <span className="block truncate font-medium">{titreContrat(c)}</span>
+                      {sousTitreContrat(c) && <span className="block truncate text-sm text-muted">{sousTitreContrat(c)}</span>}
                       <span className={`block text-sm ${attente > 30 ? "text-warning" : "text-muted"}`}>
                         {formatPeriode(c.date_debut, c.date_fin)} · fini depuis {attente} j
                       </span>
@@ -187,7 +189,7 @@ export default async function AccueilPage() {
                     <span className="block truncate font-medium">{n.marchand ?? n.description ?? "Note de frais"}</span>
                     <span className="block truncate text-sm text-muted">
                       {formatDate(n.date)}
-                      {n.organisation?.nom ? ` · ${n.organisation.nom}` : ""}
+                      {n.projet?.nom ? ` · ${n.projet.nom}` : n.organisation?.nom ? ` · ${n.organisation.nom}` : ""}
                     </span>
                   </Link>
                   <span className="shrink-0 text-sm font-medium tabular-nums">{formatEuros(n.montant_ttc)}</span>
@@ -211,8 +213,10 @@ export default async function AccueilPage() {
                 <li key={c.id}>
                   <Link href={`/contrats/${c.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-background">
                     <span className="min-w-0">
-                      <span className="block truncate font-medium">{c.employeur ?? "Employeur non renseigné"}</span>
-                      <span className="block text-sm text-muted">{formatPeriode(c.date_debut, c.date_fin)}</span>
+                      <span className="block truncate font-medium">{titreContrat(c)}</span>
+                      <span className="block truncate text-sm text-muted">
+                        {[c.employeur, formatPeriode(c.date_debut, c.date_fin)].filter(Boolean).join(" · ")}
+                      </span>
                     </span>
                     <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
                   </Link>

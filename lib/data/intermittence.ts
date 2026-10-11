@@ -42,7 +42,7 @@ export async function chargerContratsCalcul(supabase: SupabaseClient): Promise<C
   const { data } = await supabase
     .from("contrats")
     .select(
-      "id, date_debut, date_fin, heures, cachets, salaire_brut, salaire_net, paye, statut_aem, jours_travailles, poste, annexe, organisation:organisations(nom)",
+      "id, date_debut, date_fin, heures, cachets, salaire_brut, salaire_net, paye, statut_aem, jours_travailles, poste, annexe, organisation:organisations(nom), projet:projets(nom)",
     )
     .order("date_debut");
   return (data ?? []).map((c) => ({
@@ -59,5 +59,6 @@ export async function chargerContratsCalcul(supabase: SupabaseClient): Promise<C
     poste: c.poste as string | null,
     annexe: c.annexe as string,
     employeur: (c.organisation as unknown as { nom: string } | null)?.nom ?? null,
+    projet: (c.projet as unknown as { nom: string } | null)?.nom ?? null,
   }));
 }

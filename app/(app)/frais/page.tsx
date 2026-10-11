@@ -100,7 +100,7 @@ export default async function FraisPage() {
                     <p className="truncate font-medium">{n.marchand ?? n.description ?? LIBELLES_CATEGORIE[n.categorie]}</p>
                     <p className="truncate text-sm text-muted">
                       {formatDate(n.date)} · {LIBELLES_CATEGORIE[n.categorie]}
-                      {n.organisation?.nom ? ` · ${n.organisation.nom}` : ""}
+                      {n.projet?.nom ? ` · ${n.projet.nom}` : n.organisation?.nom ? ` · ${n.organisation.nom}` : ""}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
