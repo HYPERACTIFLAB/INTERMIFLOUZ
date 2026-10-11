@@ -79,7 +79,14 @@ variable `NEXT_PUBLIC_GOOGLE_LOGIN=1` une fois Google configuré.
 4. Retour dans Supabase : **Authentication → Sign In / Providers → Google** :
    active-le, colle l'ID client et le code secret, enregistre.
 
-### 3. Mettre l'appli en ligne (Vercel)
+### 3. Mettre l'appli en ligne
+
+L'appli est hébergée sur **Netlify** (projet `intermiflouze`, adresse
+<https://intermiflouze.netlify.app>), relié au dépôt GitHub : chaque envoi sur la branche
+`master` est mis en ligne automatiquement. Les variables d'environnement sont réglées dans
+**Project configuration → Environment variables** (mêmes noms que ci-dessous).
+
+Alternative équivalente : Vercel.
 
 1. Va sur <https://vercel.com> → **Sign up** avec GitHub → offre **Hobby** (gratuite).
 2. **Add New → Project** → importe le dépôt `INTERMIFLOUZ`.
