@@ -119,8 +119,15 @@ Optionnel : sans clé Claude, l'import fonctionne quand même, mais tu remplis l
 2. **Settings → Billing** : ajoute ta carte et achète du crédit (prépayé, en dollars).
    Laisse **Auto reload désactivé** : tu ne pourras jamais dépenser plus que ton crédit.
 3. **Settings → API Keys → Create Key**, nomme-la `intermiflouze`, copie-la (elle ne s'affiche qu'une fois).
-4. Dans Vercel : **Settings → Environment Variables** → ajoute `ANTHROPIC_API_KEY` avec cette clé,
-   puis **Deployments → ⋯ → Redeploy**.
+4. Dans Netlify : **Project configuration → Environment variables → Add a variable** →
+   clé `ANTHROPIC_API_KEY`, cocher **Contains secret values**, coller la clé dans **Production**.
+   Une variable ne peut pas être renommée : en cas d'erreur de nom, en créer une nouvelle.
+5. Relancer une mise en ligne (**Deploys → Trigger deploy**) : une nouvelle valeur n'est prise
+   en compte qu'après une mise en ligne.
+
+Attention : la liste des clés de Claude Console n'affiche qu'un aperçu tronqué. La clé complète
+ne s'affiche qu'une fois, à sa création (bouton **Copier**). Une erreur « 401 » signifie que la
+clé collée est incomplète ou désactivée.
 
 Coût estimé : 2 à 5 centimes de dollar par document (modèle Claude Opus 5.5). L'appli affiche
 la dépense du mois en bas de la page Contrats. Quand le crédit est épuisé, l'appli le signale
