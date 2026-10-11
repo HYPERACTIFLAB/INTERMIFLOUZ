@@ -1,0 +1,102 @@
+{
+  "version": "2026-10-11",
+  "avertissement": "Estimations indicatives. Seul France Travail calcule officiellement tes droits. Vérifie chaque valeur marquée « à vérifier » et mets-la à jour dans la page Règles de calcul.",
+  "regles": {
+    "seuil_heures": {
+      "libelle": "Heures à justifier",
+      "valeur": 507,
+      "unite": "h",
+      "description": "Nombre d'heures de travail (annexe 8 ou 10) à justifier sur la période de référence pour ouvrir ou renouveler des droits.",
+      "source": "France Travail – Culture et Spectacle",
+      "url": "https://cultureetspectacle.francetravail.fr/je-me-fais-accompagner/montant-de-l-allocation",
+      "verifie_le": "2026-10-11",
+      "a_verifier": false
+    },
+    "periode_reference_jours": {
+      "libelle": "Période de référence",
+      "valeur": 365,
+      "unite": "jours",
+      "description": "Les heures sont recherchées sur les 12 mois (365 jours) précédant la fin du dernier contrat, ou la date anniversaire en cas de renouvellement.",
+      "source": "Unédic – Dossier de synthèse sur l'indemnisation des intermittents",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": false
+    },
+    "cachet_heures": {
+      "libelle": "Équivalence d'un cachet",
+      "valeur": 12,
+      "unite": "h",
+      "description": "Nombre d'heures retenues pour un cachet.",
+      "source": "Unédic – Dossier de synthèse sur l'indemnisation des intermittents",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": false
+    },
+    "aj_minimale": {
+      "libelle": "AJ minimale (base de la formule)",
+      "valeur": 31.96,
+      "unite": "€",
+      "description": "Montant de référence utilisé dans les parties A, B et C de la formule. Revalorisé en général chaque 1er juillet.",
+      "source": "iPresta – Calculer son ARE intermittent en 2026 (à confirmer sur France Travail)",
+      "url": "https://ipresta.fr/calculer-are-intermittent/",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "a_coef_tranche1": {
+      "libelle": "Partie A : coefficient sur les salaires jusqu'au seuil",
+      "valeur": 0.42,
+      "unite": "",
+      "description": "A = AJ minimale × (coef1 × salaires jusqu'au seuil + coef2 × salaires au-delà) ÷ diviseur.",
+      "source": "Unédic – Dossier de synthèse sur l'indemnisation des intermittents",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "a_seuil_salaire": { "libelle": "Partie A : seuil de salaire", "valeur": 13700, "unite": "€", "description": "Salaires bruts de la période au-delà desquels le coefficient baisse.", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "a_coef_tranche2": { "libelle": "Partie A : coefficient au-delà du seuil", "valeur": 0.05, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "a_diviseur": { "libelle": "Partie A : diviseur", "valeur": 5000, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "b_coef_tranche1": {
+      "libelle": "Partie B : coefficient sur les heures jusqu'au seuil",
+      "valeur": 0.26,
+      "unite": "",
+      "description": "B = AJ minimale × (coef1 × heures jusqu'au seuil + coef2 × heures au-delà) ÷ diviseur.",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "b_seuil_heures": { "libelle": "Partie B : seuil d'heures", "valeur": 720, "unite": "h", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "b_coef_tranche2": { "libelle": "Partie B : coefficient au-delà du seuil", "valeur": 0.08, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "b_diviseur": { "libelle": "Partie B : diviseur", "valeur": 507, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "c_coef": {
+      "libelle": "Partie C : part fixe (annexe 8)",
+      "valeur": 0.4,
+      "unite": "",
+      "description": "C = AJ minimale × ce coefficient (40 % pour les techniciens).",
+      "source": "Calculer son ARE intermittent en 2026",
+      "url": "https://ipresta.fr/calculer-are-intermittent/",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "aj_plancher": {
+      "libelle": "Allocation journalière minimale (technicien)",
+      "valeur": 38,
+      "unite": "€",
+      "description": "L'allocation journalière ne peut pas être inférieure à ce montant.",
+      "source": "Chômage intermittents du spectacle : conditions et calcul (2026)",
+      "url": "https://blog.culturepay.fr/intermittent-du-spectacle/indemnites-chomage/",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "aj_plafond": {
+      "libelle": "Allocation journalière maximale",
+      "valeur": 174.8,
+      "unite": "€",
+      "description": "L'allocation journalière ne peut pas dépasser ce montant.",
+      "source": "Chômage intermittents du spectacle : conditions et calcul (2026)",
+      "url": "https://blog.culturepay.fr/intermittent-du-spectacle/indemnites-chomage/",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    }
+  }
+}

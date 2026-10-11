@@ -1,17 +1,41 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText, Trash2 } from "lucide-react";
+import {
+  Briefcase,
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  Clock,
+  Euro,
+  FileCheck2,
+  FileSignature,
+  FileText,
+  Folder,
+  ReceiptText,
+  Tag,
+  Ticket,
+  Trash2,
+  Umbrella,
+  type LucideIcon,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { ConfirmButton } from "@/components/ui";
 import { DemoNotice } from "@/components/states";
 import { getDb } from "@/lib/data/db";
 import { lienTemporaire, listNomsProjets, listOrganisations } from "@/lib/data/queries";
 import { LIBELLES_AEM, LIBELLES_ANNEXE, LIBELLES_DOCUMENT, type Contrat, type DocumentRow } from "@/lib/data/types";
-import { formatDate, formatEuros, formatNombre } from "@/lib/format";
+import { formatDate, formatEuros, formatNombre, formatPeriodeLongue } from "@/lib/format";
 import { deleteContrat, deleteDocument, updateStatutAem } from "../actions";
 import { ContratForm } from "../contrat-form";
 import { valeursDepuisContrat } from "../form-values";
 import { Uploader } from "../uploader";
+
+const ICONES_DOCUMENT: Record<string, LucideIcon> = {
+  contrat: FileSignature,
+  fiche_paie: ReceiptText,
+  aem: FileCheck2,
+  autre: Umbrella,
+};
 
 export default async function ContratPage({ params }: PageProps<"/contrats/[id]">) {
   const { id } = await params;
@@ -32,18 +56,31 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
 
   const liens = await Promise.all((documents ?? []).map((d) => lienTemporaire(db.supabase, d.chemin_stockage)));
 
-  const lignes: [string, React.ReactNode][] = [
-    ["Employeur", contrat.organisation ? <Link href={`/contacts/${contrat.organisation.id}`} className="text-accent">{contrat.organisation.nom}</Link> : "—"],
-    ["Projet", contrat.projet?.nom ?? "—"],
-    ["Du", formatDate(contrat.date_debut)],
-    ["Au", formatDate(contrat.date_fin)],
-    ["Heures", `${formatNombre(Number(contrat.heures))} h`],
-    ["Cachets", String(contrat.cachets)],
-    ["Salaire brut", formatEuros(contrat.salaire_brut)],
-    ["Salaire net", formatEuros(contrat.salaire_net)],
-    ["Annexe", LIBELLES_ANNEXE[contrat.annexe]],
+  const heures = Number(contrat.heures);
+  const tauxHoraire = contrat.salaire_brut !== null && heures > 0 ? Math.round(contrat.salaire_brut / heures) : null;
+  const lignes: { icone: LucideIcon; label: string; valeur: React.ReactNode }[] = [
+    { icone: CalendarDays, label: "Dates concernées", valeur: formatPeriodeLongue(contrat.date_debut, contrat.date_fin) },
+    {
+      icone: Building2,
+      label: "Employeur",
+      valeur: contrat.organisation ? (
+        <Link href={`/contacts/${contrat.organisation.id}`} className="text-accent">
+          {contrat.organisation.nom}
+        </Link>
+      ) : (
+        "—"
+      ),
+    },
+    { icone: Briefcase, label: "Poste", valeur: contrat.poste ?? "—" },
+    { icone: Folder, label: "Projet", valeur: contrat.projet?.nom ?? "—" },
+    { icone: Clock, label: "Heures travaillées", valeur: heures ? `${formatNombre(heures)} h` : "—" },
+    { icone: Ticket, label: "Cachets", valeur: contrat.cachets || "—" },
+    { icone: Euro, label: "Taux horaire brut", valeur: tauxHoraire ? formatEuros(tauxHoraire) : "—" },
+    { icone: Euro, label: "Rémunération brute totale", valeur: formatEuros(contrat.salaire_brut) },
+    { icone: Euro, label: "Net à payer avant impôt", valeur: formatEuros(contrat.salaire_net) },
+    { icone: Tag, label: "Annexe", valeur: LIBELLES_ANNEXE[contrat.annexe] },
   ];
-  if (contrat.jours_travailles.length) lignes.push(["Jours travaillés", String(contrat.jours_travailles.length)]);
+  if (contrat.jours_travailles.length) lignes.splice(1, 0, { icone: CalendarCheck, label: "Jours travaillés", valeur: contrat.jours_travailles.length });
 
   return (
     <>
@@ -54,14 +91,20 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
       />
 
       <div className="space-y-8">
-        <dl className="card grid grid-cols-2 gap-x-4 gap-y-3 p-4 md:grid-cols-4 md:p-6">
-          {lignes.map(([label, valeur]) => (
-            <div key={label} className="min-w-0">
-              <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
-              <dd className="mt-0.5 break-words font-medium tabular-nums">{valeur}</dd>
-            </div>
-          ))}
-        </dl>
+        <section aria-labelledby="details">
+          <h2 id="details" className="mb-3 text-lg font-semibold">Détails</h2>
+          <dl className="card divide-y divide-border">
+            {lignes.map(({ icone: Icone, label, valeur }) => (
+              <div key={label} className="flex items-start gap-4 px-4 py-3.5">
+                <Icone size={22} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+                <div className="min-w-0">
+                  <dt className="font-medium">{label}</dt>
+                  <dd className="mt-0.5 break-words text-muted tabular-nums">{valeur}</dd>
+                </div>
+              </div>
+            ))}
+          </dl>
+        </section>
 
         <section aria-labelledby="aem" className="card p-4 md:p-6">
           <h2 id="aem" className="font-semibold">Attestation employeur (AEM)</h2>
@@ -86,7 +129,10 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
           <div className="card divide-y divide-border">
             {(documents ?? []).map((d, i) => (
               <div key={d.id} className="flex items-center gap-3 p-4">
-                <FileText size={20} className="shrink-0 text-accent" aria-hidden />
+                {(() => {
+                  const Icone = ICONES_DOCUMENT[d.type] ?? FileText;
+                  return <Icone size={22} className="shrink-0 text-muted" aria-hidden />;
+                })()}
                 <div className="min-w-0 flex-1">
                   {liens[i] ? (
                     <a href={liens[i]!} target="_blank" rel="noopener noreferrer" className="block truncate font-medium text-accent">

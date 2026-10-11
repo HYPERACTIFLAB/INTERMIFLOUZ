@@ -49,3 +49,15 @@ export function parseNombre(texte: string | null | undefined): number | null {
   const n = Number(texte.replace(/\s/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
 }
+
+/** « Du jeudi 16 au samedi 18/07/2026 », comme Movinmotion. */
+export function formatPeriodeLongue(debut: string, fin: string) {
+  const jour = (iso: string) =>
+    new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", timeZone: "UTC" }).format(new Date(iso + "T12:00:00Z"));
+  const complet = (iso: string) =>
+    new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" })
+      .format(new Date(iso + "T12:00:00Z"));
+  if (debut === fin) return `Le ${complet(debut)}`;
+  if (debut.slice(0, 7) === fin.slice(0, 7)) return `Du ${jour(debut)} au ${complet(fin)}`;
+  return `Du ${complet(debut)} au ${complet(fin)}`;
+}

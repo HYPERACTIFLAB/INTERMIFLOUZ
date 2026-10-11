@@ -13,7 +13,7 @@ frais, devis/factures, finances et agenda.
 |---|---|---|
 | 0 | Socle : connexion (code par e-mail), menu, installation PWA | ✅ |
 | a | Contacts, contrats + import PDF intelligent | ✅ |
-| b | Compteur d'heures + récap d'actualisation | à venir |
+| b | Compteur d'heures, projection, récap d'actualisation, règles modifiables | ✅ |
 | c | Notes de frais avec scan | à venir |
 | d | Micro-entreprise + devis/factures | à venir |
 | e | Tableau de bord finances + simulateur | à venir |
@@ -51,6 +51,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 |---|---|
 | `20261011000001_etape_a_contrats.sql` | a : contacts, contrats, documents |
 | `20261011000002_securite_rls_auto_enable.sql` | sécurité (option « automatic RLS ») |
+| `20261011000003_etape_b_intermittence.sql` | b : situation d'intermittence, règles modifiées |
 
 ### 1 ter. Connexion
 
@@ -160,7 +161,11 @@ Sans `.env.local`, l'appli démarre en **mode démo** (interface visible, rien
 n'est enregistré, connexion désactivée). Ce mode n'existe qu'en local : une fois
 déployée, l'appli exige toujours une connexion.
 
-Commandes utiles : `npm run lint`, `npm run build`.
+Commandes utiles : `npm run lint`, `npm run build`, `npm test` (tests des calculs).
+
+Les règles de calcul (seuils, formule de l'allocation…) sont dans `config/regles.json`, chacune avec sa
+source et sa date de vérification. Le moteur de calcul est dans `lib/regles/` (testé dans
+`lib/regles/intermittence.test.ts`).
 
 ### Organisation du code
 
