@@ -8,6 +8,7 @@ import {
   Receipt,
   Settings,
   SlidersHorizontal,
+  Target,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Accueil", icon: Home, description: "Vue d'ensemble", etape: "0" },
   { href: "/contrats", label: "Contrats", icon: FileText, description: "Contrats d'intermittence et import PDF", etape: "a" },
   { href: "/intermittence", label: "Intermittence", short: "Heures", icon: Gauge, description: "Compteur 507 h et récap d'actualisation", etape: "b" },
+  { href: "/objectif", label: "Objectif ARE", short: "Objectif", icon: Target, description: "Ce qu'il te reste à faire pour l'allocation visée", etape: "b" },
   { href: "/frais", label: "Notes de frais", short: "Frais", icon: Receipt, description: "Justificatifs scannés et remboursements", etape: "c" },
   { href: "/micro", label: "Micro-entreprise", icon: Briefcase, description: "CA, URSSAF, devis et factures", etape: "d" },
   { href: "/finances", label: "Finances", icon: BarChart3, description: "Revenus par source et simulateur", etape: "e" },

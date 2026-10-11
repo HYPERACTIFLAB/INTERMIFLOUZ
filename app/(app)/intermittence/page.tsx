@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, ChevronRight, ClipboardList, Info, SlidersHorizontal, TrendingUp } from "lucide-react";
+import { CalendarClock, ChevronRight, ClipboardList, Info, SlidersHorizontal, Target, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { DemoNotice } from "@/components/states";
 import { getDb } from "@/lib/data/db";
@@ -142,7 +142,7 @@ export default async function IntermittencePage() {
         )}
 
         {/* Liens */}
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Link href="/intermittence/actualisation" className="card flex items-center gap-4 p-4 hover:border-accent">
             <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-accent">
               <ClipboardList size={20} aria-hidden />
@@ -150,6 +150,16 @@ export default async function IntermittencePage() {
             <span className="flex-1">
               <span className="block font-medium">Récap d&apos;actualisation</span>
               <span className="block text-sm text-muted">Heures, employeurs et salaires du mois</span>
+            </span>
+            <ChevronRight size={18} className="text-muted" aria-hidden />
+          </Link>
+          <Link href="/objectif" className="card flex items-center gap-4 p-4 hover:border-accent">
+            <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-accent">
+              <Target size={20} aria-hidden />
+            </span>
+            <span className="flex-1">
+              <span className="block font-medium">Objectif ARE</span>
+              <span className="block text-sm text-muted">Ce qu&apos;il te reste à faire pour l&apos;allocation visée</span>
             </span>
             <ChevronRight size={18} className="text-muted" aria-hidden />
           </Link>

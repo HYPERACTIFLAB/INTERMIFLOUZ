@@ -7,6 +7,10 @@ export type SituationComplete = Situation & {
   date_ouverture: string | null;
   aj_actuelle: number | null;
   notes: string | null;
+  objectif_aj: number | null;
+  /** Centimes par heure. */
+  objectif_taux_horaire: number | null;
+  objectif_heures_jour: number | null;
 };
 
 const SITUATION_VIDE: SituationComplete = {
@@ -15,6 +19,9 @@ const SITUATION_VIDE: SituationComplete = {
   date_ouverture: null,
   aj_actuelle: null,
   notes: null,
+  objectif_aj: null,
+  objectif_taux_horaire: null,
+  objectif_heures_jour: null,
 };
 
 /** Règles de calcul : fichier config/regles.json + valeurs modifiées dans l'appli. */
@@ -26,9 +33,17 @@ export async function chargerRegles(supabase: SupabaseClient) {
 export async function chargerSituation(supabase: SupabaseClient): Promise<SituationComplete> {
   const { data } = await supabase
     .from("situation_intermittence")
-    .select("droits_ouverts, date_anniversaire, date_ouverture, aj_actuelle, notes")
+    .select("droits_ouverts, date_anniversaire, date_ouverture, aj_actuelle, notes, objectif_aj, objectif_taux_horaire, objectif_heures_jour")
     .maybeSingle();
-  return data ? { ...data, aj_actuelle: data.aj_actuelle === null ? null : Number(data.aj_actuelle) } : SITUATION_VIDE;
+  const nombre = (x: unknown) => (x === null || x === undefined ? null : Number(x));
+  return data
+    ? {
+        ...data,
+        aj_actuelle: nombre(data.aj_actuelle),
+        objectif_aj: nombre(data.objectif_aj),
+        objectif_heures_jour: nombre(data.objectif_heures_jour),
+      }
+    : SITUATION_VIDE;
 }
 
 /** Tous les contrats, au format du moteur de calcul. */

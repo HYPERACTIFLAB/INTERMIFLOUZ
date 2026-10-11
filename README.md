@@ -13,7 +13,7 @@ frais, devis/factures, finances et agenda.
 |---|---|---|
 | 0 | Socle : connexion (code par e-mail), menu, installation PWA | ✅ |
 | a | Contacts, contrats + import PDF intelligent | ✅ |
-| b | Compteur d'heures, projection, récap d'actualisation, règles modifiables | ✅ |
+| b | Compteur d'heures, projection, récap d'actualisation, règles modifiables, objectif ARE | ✅ |
 | c | Notes de frais avec scan + page d'accueil (tableau de bord) | ✅ |
 | d | Micro-entreprise + devis/factures | à venir |
 | e | Tableau de bord finances + simulateur | à venir |
@@ -53,6 +53,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | `20261011000002_securite_rls_auto_enable.sql` | sécurité (option « automatic RLS ») |
 | `20261011000003_etape_b_intermittence.sql` | b : situation d'intermittence, règles modifiées |
 | `20261011000004_etape_c_frais_paiements.sql` | c : notes de frais, salaire perçu ou non |
+| `20261011000005_objectif_are.sql` | objectif d'allocation journalière |
 
 ### 1 ter. Connexion
 
@@ -166,7 +167,8 @@ Commandes utiles : `npm run lint`, `npm run build`, `npm test` (tests des calcul
 
 Les règles de calcul (seuils, formule de l'allocation…) sont dans `config/regles.json`, chacune avec sa
 source et sa date de vérification. Le moteur de calcul est dans `lib/regles/` (testé dans
-`lib/regles/intermittence.test.ts`).
+`lib/regles/intermittence.test.ts` et `lib/regles/objectif.test.ts`). La page « Objectif ARE »
+cherche, par dichotomie, le nombre d'heures (au salaire horaire choisi) qui donne l'allocation visée.
 
 ### Organisation du code
 
