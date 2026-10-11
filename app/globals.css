@@ -64,3 +64,26 @@ body {
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Éléments de formulaire communs (utilisables comme des classes Tailwind) */
+@utility input {
+  @apply block w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-base outline-none transition-colors placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-60 md:text-sm;
+}
+@utility input-incertain {
+  @apply border-warning! bg-warning-soft! focus:border-warning! focus:ring-warning/20!;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium;
+}
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50;
+}
+@utility btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 font-medium transition-colors hover:bg-background disabled:opacity-50;
+}
+@utility btn-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-danger/40 px-4 py-2.5 font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50;
+}
+@utility card {
+  @apply rounded-2xl border border-border bg-surface;
+}

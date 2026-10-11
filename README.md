@@ -12,7 +12,7 @@ frais, devis/factures, finances et agenda.
 | Étape | Contenu | État |
 |---|---|---|
 | 0 | Socle : connexion Google, menu, installation PWA | ✅ |
-| a | Contrats + import PDF intelligent | à venir |
+| a | Contacts, contrats + import PDF intelligent | ✅ |
 | b | Compteur d'heures + récap d'actualisation | à venir |
 | c | Notes de frais avec scan | à venir |
 | d | Micro-entreprise + devis/factures | à venir |
@@ -37,6 +37,19 @@ Supabase, Google Cloud (ton compte Google habituel suffit) et Vercel.
 3. Une fois le projet créé : **Project Settings → API Keys** (ou bouton **Connect**). Note :
    - le **Project URL** (`https://xxxx.supabase.co`)
    - la **Publishable key** (commence par `sb_publishable_`)
+
+### 1 bis. Créer les tables (à refaire à chaque nouvelle étape)
+
+Les tables de la base sont décrites dans le dossier [`supabase/migrations/`](supabase/migrations/),
+un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois :
+
+1. Ouvre le fichier sur GitHub, clique sur l'icône **Copier** (« Copy raw file »).
+2. Dans Supabase : menu **SQL Editor → New query**, colle, puis **Run**.
+3. Le message « Success. No rows returned » confirme que c'est fait.
+
+| Fichier | Étape |
+|---|---|
+| `20261011000001_etape_a_contrats.sql` | a : contacts, contrats, documents |
 
 ### 2. Autoriser « Se connecter avec Google » (Google Cloud)
 
@@ -73,6 +86,21 @@ Supabase, Google Cloud (ton compte Google habituel suffit) et Vercel.
 
 Ensuite, chaque modification envoyée sur GitHub est mise en ligne automatiquement.
 
+### 3 bis. Activer la lecture automatique des documents (Claude, payant)
+
+Optionnel : sans clé Claude, l'import fonctionne quand même, mais tu remplis la fiche à la main.
+
+1. Crée un compte sur <https://console.anthropic.com> (différent d'un abonnement Claude).
+2. **Settings → Billing** : ajoute ta carte et achète du crédit (prépayé, en dollars).
+   Laisse **Auto reload désactivé** : tu ne pourras jamais dépenser plus que ton crédit.
+3. **Settings → API Keys → Create Key**, nomme-la `intermiflouze`, copie-la (elle ne s'affiche qu'une fois).
+4. Dans Vercel : **Settings → Environment Variables** → ajoute `ANTHROPIC_API_KEY` avec cette clé,
+   puis **Deployments → ⋯ → Redeploy**.
+
+Coût estimé : 2 à 5 centimes de dollar par document (modèle Claude Opus 5.5). L'appli affiche
+la dépense du mois en bas de la page Contrats. Quand le crédit est épuisé, l'appli le signale
+et tu continues en saisie manuelle.
+
 ### 4. Installer l'appli
 
 - **iPhone** : ouvre ton adresse Vercel dans **Safari** → bouton **Partager** → **Sur l'écran d'accueil**.
@@ -91,6 +119,11 @@ cp .env.example .env.local   # puis remplis les valeurs
 npm run dev                  # http://localhost:3000
 ```
 
+Base de données locale (nécessite Docker) : `npx supabase start`, puis copie dans
+`.env.local` l'URL et la clé « publishable » affichées. Les tables sont créées
+automatiquement. En développement, la page de connexion propose aussi une connexion
+par mot de passe (utilisateurs créés avec `npx supabase` ou l'API d'administration locale).
+
 Sans `.env.local`, l'appli démarre en **mode démo** (interface visible, rien
 n'est enregistré, connexion désactivée). Ce mode n'existe qu'en local : une fois
 déployée, l'appli exige toujours une connexion.
@@ -105,6 +138,8 @@ app/connexion/   Page de connexion Google
 app/auth/        Retour de Google, déconnexion
 components/      Éléments d'interface
 lib/             Logique (Supabase, configuration, navigation)
+lib/extraction/  Lecture des documents par Claude (schéma des champs, coût)
+supabase/        Tables et règles de sécurité (migrations SQL)
 proxy.ts         Vérifie la connexion avant chaque page
 public/sw.js     Service worker (installation, page hors ligne)
 ```
@@ -114,3 +149,5 @@ public/sw.js     Service worker (installation, page hors ligne)
 - Toutes les pages exigent une session Supabase valide **et** un e-mail présent dans `ALLOWED_EMAILS`.
 - Les clés secrètes (Claude, Google Agenda…) ne seront jamais préfixées `NEXT_PUBLIC_` : elles restent sur le serveur.
 - Le service worker ne met aucune donnée personnelle en cache.
+- Chaque table a une règle RLS « je ne vois que mes lignes » ; les fichiers sont dans un stockage privé,
+  rangés par utilisateur, et affichés via des liens valables 10 minutes.

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { GoogleSignInButton } from "./google-button";
+import { DevLogin } from "./dev-login";
 import { supabaseConfigured } from "@/lib/config";
 
 export const metadata = { title: "Connexion" };
@@ -28,7 +29,10 @@ export default async function ConnexionPage({ searchParams }: PageProps<"/connex
 
         <div className="mt-8">
           {supabaseConfigured ? (
-            <GoogleSignInButton />
+            <>
+              <GoogleSignInButton />
+              {process.env.NODE_ENV === "development" && <DevLogin />}
+            </>
           ) : (
             <p className="text-sm text-muted">
               L&apos;appli n&apos;est pas encore reliée à Supabase. Suis le README, section
