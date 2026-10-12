@@ -55,6 +55,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | `20261011000004_etape_c_frais_paiements.sql` | c : notes de frais, salaire perçu ou non |
 | `20261011000005_objectif_are.sql` | objectif d'allocation journalière |
 | `20261011000006_etape_f_agenda.sql` | f : connexion Google Agenda |
+| `20261012000001_widget.sql` | widget iPhone (clé perso) |
 
 ### 1 ter. Connexion
 
@@ -170,6 +171,12 @@ jours de tournage. Elle n'a accès qu'à cet agenda-là : elle ne peut ni lire n
 Ensuite, chaque contrat enregistré, complété ou supprimé est mis à jour tout seul dans Google
 (un événement « journée entière » par série de jours travaillés). Le jeton Google est chiffré en base
 (AES-256-GCM, clé dérivée du code secret client). Changer le code secret oblige à reconnecter Google.
+
+### 3 quater. Widget iPhone (gratuit)
+
+Avec l'appli gratuite **Scriptable** (App Store) : dans Intermiflouze, **Plus → Widget iPhone**, suis
+les 5 étapes affichées. Le script contient une clé perso (seule son empreinte est gardée en base) ;
+recréer un script désactive l'ancien.
 
 ### 4. Installer l'appli
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, KeyRound, LogOut } from "lucide-react";
+import { ChevronRight, KeyRound, LayoutGrid, LogOut } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { demoMode } from "@/lib/config";
 import { MOBILE_TABS, NAV_ITEMS } from "@/lib/navigation";
@@ -25,6 +25,13 @@ export default function PlusPage() {
           );
         })}
       </ul>
+      {!demoMode && (
+        <Link href="/widget" className="card mt-6 flex items-center gap-4 px-4 py-3.5">
+          <LayoutGrid size={20} className="text-accent" aria-hidden />
+          <span className="flex-1">Widget iPhone</span>
+          <ChevronRight size={18} className="text-muted" aria-hidden />
+        </Link>
+      )}
       {!demoMode && (
         <Link href="/mot-de-passe" className="card mt-6 flex items-center gap-4 px-4 py-3.5">
           <KeyRound size={20} className="text-accent" aria-hidden />
