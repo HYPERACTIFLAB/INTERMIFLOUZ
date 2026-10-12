@@ -34,6 +34,7 @@ export function Uploader({ userId, mode, contratId }: Props) {
   const [type, setType] = useState<NouveauDocument["type"]>(mode === "import" ? "contrat" : "fiche_paie");
   const fichierRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const [survol, setSurvol] = useState(false);
 
   /** Vérifie, dépose le fichier dans le stockage privé et renvoie sa description. */
   async function deposer(file: File): Promise<NouveauDocument | string> {
@@ -141,27 +142,60 @@ export function Uploader({ userId, mode, contratId }: Props) {
         </p>
       )}
 
-      <div>
-        <label htmlFor={`type-${mode}`} className="label">Type de document</label>
-        {mode === "import" && (
-          <p className="mb-2 text-xs text-muted">Tu peux choisir plusieurs fichiers d&apos;un coup. Claude corrige le type s&apos;il se trompe.</p>
-        )}
-        <select id={`type-${mode}`} value={type} onChange={(e) => setType(e.target.value as NouveauDocument["type"])} className="input">
-          <option value="contrat">Contrat de travail</option>
-          <option value="fiche_paie">Fiche de paie</option>
-          <option value="aem">Attestation employeur (AEM)</option>
-          <option value="autre">Autre</option>
-        </select>
-      </div>
+      {mode === "ajout" && (
+        <div>
+          <label htmlFor="type-ajout" className="label">Type de document</label>
+          <select id="type-ajout" value={type} onChange={(e) => setType(e.target.value as NouveauDocument["type"])} className="input">
+            <option value="fiche_paie">Fiche de paie</option>
+            <option value="aem">Attestation employeur (AEM)</option>
+            <option value="contrat">Contrat de travail</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button type="button" onClick={() => fichierRef.current?.click()} className="btn-primary py-4">
-          <FileUp size={20} aria-hidden /> Choisir des fichiers
-        </button>
-        <button type="button" onClick={() => photoRef.current?.click()} className="btn-secondary py-4">
-          <Camera size={20} aria-hidden /> Prendre une photo
-        </button>
-      </div>
+      {mode === "import" ? (
+        // Zone de dépôt : on peut aussi glisser des fichiers depuis l'ordinateur.
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setSurvol(true);
+          }}
+          onDragLeave={() => setSurvol(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setSurvol(false);
+            envoyer(e.dataTransfer.files);
+          }}
+          className={`flex flex-col items-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
+            survol ? "border-accent bg-accent-soft" : "border-border"
+          }`}
+        >
+          <FileUp size={32} className="text-accent" aria-hidden />
+          <p className="mt-3 font-medium">Contrats, bulletins de salaire, AEM…</p>
+          <p className="mt-1 max-w-sm text-sm text-muted">
+            Mets-les tous d&apos;un coup, dans n&apos;importe quel ordre : l&apos;appli regroupe les documents d&apos;un même tournage.
+          </p>
+          <div className="mt-5 grid w-full max-w-md gap-3 sm:grid-cols-2">
+            <button type="button" onClick={() => fichierRef.current?.click()} className="btn-primary py-3.5">
+              <FileUp size={20} aria-hidden /> Choisir des fichiers
+            </button>
+            <button type="button" onClick={() => photoRef.current?.click()} className="btn-secondary py-3.5">
+              <Camera size={20} aria-hidden /> Prendre une photo
+            </button>
+          </div>
+          <p className="mt-3 hidden text-xs text-muted md:block">ou glisse-les ici</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={() => fichierRef.current?.click()} className="btn-primary py-3">
+            <FileUp size={20} aria-hidden /> Choisir un fichier
+          </button>
+          <button type="button" onClick={() => photoRef.current?.click()} className="btn-secondary py-3">
+            <Camera size={20} aria-hidden /> Prendre une photo
+          </button>
+        </div>
+      )}
       <input
         ref={fichierRef}
         type="file"

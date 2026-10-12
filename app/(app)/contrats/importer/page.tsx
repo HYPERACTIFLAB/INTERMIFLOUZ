@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { DemoNotice } from "@/components/states";
 import { getDb } from "@/lib/data/db";
@@ -14,27 +15,27 @@ export default async function ImporterPage() {
   return (
     <>
       <PageHeader
-        title="Importer un document"
-        description={
-          lecture
-            ? "Contrat, fiche de paie ou AEM, en PDF ou en photo. Claude lit le document et pré-remplit la fiche ; tu vérifies avant d'enregistrer."
-            : "Contrat, fiche de paie ou AEM, en PDF ou en photo. Le document sera rattaché à la fiche que tu rempliras."
-        }
+        title="Ajouter des documents"
+        description={lecture ? "Claude les lit et remplit les fiches. Tu n'as plus qu'à vérifier." : undefined}
         back={{ href: "/contrats", label: "Contrats" }}
       />
       {!db ? (
         <DemoNotice />
       ) : (
-        <>
+        <div className="space-y-4">
           {!lecture && (
-            <p className="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+            <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
               La lecture automatique est désactivée (pas de clé Claude configurée) : tu rempliras la fiche à la main.
             </p>
           )}
-          <div className="card p-4 md:p-6">
-            <Uploader userId={db.user.id} mode="import" />
-          </div>
-        </>
+          <Uploader userId={db.user.id} mode="import" />
+          <p className="text-center text-sm text-muted">
+            Pas de document ?{" "}
+            <Link href="/contrats/nouveau" className="font-medium text-accent">
+              Saisir un contrat à la main
+            </Link>
+          </p>
+        </div>
       )}
     </>
   );
