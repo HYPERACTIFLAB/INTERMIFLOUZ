@@ -203,7 +203,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
                 <form action={deconnecterGoogle}>
                   <ConfirmButton
                     className="btn-secondary text-danger"
-                    message="Déconnecter Google Agenda ? L'agenda « Intermiflouze » restera dans Google, tu pourras le supprimer toi-même."
+                    message="Déconnecter Google Agenda ? L'agenda « Tournage » restera dans Google, tu pourras le supprimer toi-même."
                   >
                     Déconnecter
                   </ConfirmButton>

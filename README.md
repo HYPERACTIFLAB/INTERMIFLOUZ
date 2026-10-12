@@ -17,7 +17,7 @@ frais, devis/factures, finances et agenda.
 | c | Notes de frais avec scan + page d'accueil (tableau de bord) | ✅ |
 | d | Micro-entreprise + devis/factures | à venir |
 | e | Tableau de bord finances + simulateur | à venir |
-| f | Google Agenda (agenda « Intermiflouze – Tournages » mis à jour automatiquement) | ✅ |
+| f | Google Agenda (agenda « Tournage » mis à jour automatiquement) | ✅ |
 
 ---
 
@@ -139,7 +139,7 @@ et tu continues en saisie manuelle.
 
 ### 3 ter. Google Agenda (gratuit, une fois, depuis l'ordinateur)
 
-L'appli crée son propre agenda « Intermiflouze – Tournages » dans ton Google Agenda et y met tes
+L'appli crée son propre agenda « Tournage » dans ton Google Agenda et y met tes
 jours de tournage. Elle n'a accès qu'à cet agenda-là : elle ne peut ni lire ni modifier les autres.
 
 1. Va sur <https://console.cloud.google.com> (avec ton compte Gmail) → en haut, **Sélectionner un

@@ -1,7 +1,7 @@
 /** Google Agenda : identifiants OAuth (variables d'environnement côté serveur uniquement). */
 
 export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.app.created";
-export const NOM_AGENDA = "Intermiflouze – Tournages";
+export const NOM_AGENDA = "Tournage";
 
 export function googleConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
