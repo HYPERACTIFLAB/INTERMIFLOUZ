@@ -20,3 +20,13 @@ export const URL_AUTORISATION = local ? `${local}/o/oauth2/v2/auth` : "https://a
 export const URL_JETON = local ? `${local}/token` : "https://oauth2.googleapis.com/token";
 export const URL_REVOCATION = local ? `${local}/revoke` : "https://oauth2.googleapis.com/revoke";
 export const URL_AGENDA = local ? `${local}/calendar/v3` : "https://www.googleapis.com/calendar/v3";
+
+/**
+ * Appli Google en mode « Test » : Google coupe l'accès 7 jours après chaque connexion.
+ * On prévient un jour avant. Renvoie l'échéance, et si elle est proche ou dépassée.
+ */
+export function echeanceAcces(connecteLe: string, maintenant = new Date()) {
+  const fin = new Date(new Date(connecteLe).getTime() + 7 * 24 * 3600 * 1000);
+  const restant = fin.getTime() - maintenant.getTime();
+  return { fin, bientot: restant < 24 * 3600 * 1000, expire: restant <= 0 };
+}

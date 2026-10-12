@@ -5,7 +5,7 @@ import { DemoNotice, ErrorBanner } from "@/components/states";
 import { ConfirmButton, SubmitButton } from "@/components/ui";
 import { getDb } from "@/lib/data/db";
 import { chargerContratsCalcul } from "@/lib/data/intermittence";
-import { googleConfigured, NOM_AGENDA } from "@/lib/google/config";
+import { echeanceAcces, googleConfigured, NOM_AGENDA } from "@/lib/google/config";
 import { blocsJours } from "@/lib/google/evenements";
 import { ajouterJours, ajouterMois, aujourdhui, bornesMois } from "@/lib/regles/dates";
 import { formatDate, formatNombre, formatPeriode } from "@/lib/format";
@@ -188,6 +188,16 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
                   ? `Dernier envoi : ${formatDate(connexion.derniere_synchro as string, "long")} à ${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(connexion.derniere_synchro as string))}.`
                   : "Aucun envoi pour l'instant."}
               </p>
+              {(() => {
+                const ech = echeanceAcces(connexion.connecte_le as string);
+                return (
+                  <p className={ech.bientot ? "text-warning" : "text-muted"}>
+                    {ech.expire
+                      ? "L'accès Google a expiré (Google le coupe tous les 7 jours) : reconnecte-toi."
+                      : `Accès Google valable jusqu'au ${formatDate(ech.fin.toISOString().slice(0, 10), "long")} (Google le coupe tous les 7 jours).`}
+                  </p>
+                );
+              })()}
               {connexion.derniere_erreur && (
                 <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-danger">
                   Dernier envoi en échec : {connexion.derniere_erreur as string}{" "}
@@ -200,6 +210,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/agenda">)
                     <span className="inline-flex items-center gap-2"><RefreshCw size={16} aria-hidden /> Tout renvoyer</span>
                   </SubmitButton>
                 </form>
+                <a href="/api/google/connexion" className="btn-secondary">Reconnecter</a>
                 <form action={deconnecterGoogle}>
                   <ConfirmButton
                     className="btn-secondary text-danger"

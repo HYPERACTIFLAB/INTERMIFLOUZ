@@ -150,8 +150,11 @@ jours de tournage. Elle n'a accès qu'à cet agenda-là : elle ne peut ni lire n
    - Nom de l'application : `Intermiflouze` ; e-mail d'assistance : ton adresse.
    - Audience : **Externe**.
    - Coordonnées : ton adresse. Accepte les conditions → **Créer**.
-4. Dans **Audience** : clique sur **Publier l'application** (passer « En production ») et confirme.
-   Sans ça, Google coupe l'accès tous les 7 jours. Pas besoin de validation par Google pour un usage perso.
+4. Dans **Audience → Utilisateurs test** : ajoute ton adresse Gmail. L'application reste en mode
+   **Test** : Google coupe alors l'accès 7 jours après chaque connexion. L'appli prévient la veille
+   sur l'accueil ; il suffit d'appuyer sur « Reconnecter » (Agenda). Publier l'application
+   (« En production ») supprimerait cette limite, mais Google demande alors de compléter le branding
+   (page d'accueil, règles de confidentialité : `https://intermiflouze.netlify.app/confidentialite`).
 5. Dans **Clients** (ou « Identifiants ») → **Créer un client** :
    - Type d'application : **Application Web** ; nom : `Intermiflouze`.
    - **URI de redirection autorisés** → **Ajouter un URI** :

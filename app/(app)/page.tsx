@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, FileWarning, Gauge, Receipt, Wallet } from "lucide-react";
+import { CalendarClock, ChevronRight, FileWarning, Gauge, Receipt, Wallet } from "lucide-react";
 import { BarChart } from "@/components/bar-chart";
 import { Bouton1312 } from "@/components/bouton-1312";
 import { sousTitreContrat, titreContrat } from "@/lib/titre";
@@ -11,6 +11,7 @@ import { listNotes } from "@/lib/data/frais";
 import { chargerLots } from "@/lib/data/imports";
 import { chargerContratsCalcul, chargerRegles, chargerSituation } from "@/lib/data/intermittence";
 import { NAV_ITEMS } from "@/lib/navigation";
+import { echeanceAcces, googleConfigured } from "@/lib/google/config";
 import { aujourdhui, joursInclus } from "@/lib/regles/dates";
 import { compteur } from "@/lib/regles/intermittence";
 import { salairesParMois } from "@/lib/regles/revenus";
@@ -79,13 +80,17 @@ export default async function AccueilPage() {
   }
 
   const jour = aujourdhui();
-  const [contrats, regles, situation, notes, lots] = await Promise.all([
+  const [contrats, regles, situation, notes, lots, { data: google }] = await Promise.all([
     chargerContratsCalcul(db.supabase),
     chargerRegles(db.supabase),
     chargerSituation(db.supabase),
     listNotes(db.supabase),
     chargerLots(db.supabase),
+    db.supabase.from("connexions_google").select("connecte_le, derniere_erreur").maybeSingle(),
   ]);
+  // Google coupe l'accès tous les 7 jours (appli en mode Test) : rappel la veille, ou après une erreur.
+  const ech = google && googleConfigured() ? echeanceAcces(google.connecte_le as string) : null;
+  const reconnecterGoogle = ech && (ech.bientot || google?.derniere_erreur);
 
   const r = compteur(contrats, situation, regles, jour);
   const nonPercus = contrats.filter((c) => !c.paye && c.date_fin <= jour).sort((a, b) => a.date_fin.localeCompare(b.date_fin));
@@ -109,6 +114,18 @@ export default async function AccueilPage() {
             <span className="flex-1">{lots.length} import(s) de contrats à vérifier</span>
             <ChevronRight size={18} aria-hidden />
           </Link>
+        )}
+
+        {reconnecterGoogle && (
+          <a href="/api/google/connexion" className="flex items-center gap-3 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+            <CalendarClock size={18} aria-hidden />
+            <span className="flex-1">
+              {ech!.expire || google?.derniere_erreur
+                ? "Google Agenda est déconnecté (Google coupe l'accès tous les 7 jours). Appuie ici pour reconnecter."
+                : "L'accès à Google Agenda expire demain. Appuie ici pour le prolonger de 7 jours."}
+            </span>
+            <ChevronRight size={18} aria-hidden />
+          </a>
         )}
 
         {/* Chiffres clés */}
