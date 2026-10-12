@@ -109,7 +109,7 @@ gratuite limite le nombre de mises en ligne par mois.)
    | `ALLOWED_EMAILS` | ton adresse e-mail (seule personne autorisée) |
    | `ANTHROPIC_API_KEY` | ta clé Claude (facultatif, voir 3 bis) |
 
-5. **Deploy**. Au bout de 1 à 2 minutes, Vercel affiche l'adresse, du type
+5. **Deploy** (si rien ne se publie, envoyer une modification sur `master` lance la première mise en ligne). Au bout de 1 à 2 minutes, Vercel affiche l'adresse, du type
    `https://intermiflouze.vercel.app`.
 
 Pour changer une variable plus tard : **Settings → Environment Variables**, puis
