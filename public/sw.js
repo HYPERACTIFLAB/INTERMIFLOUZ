@@ -2,7 +2,7 @@
 // Volontairement minimal : les données sont privées, on ne les met PAS en cache.
 // On garde seulement une page « hors ligne » et les fichiers statiques de l'appli.
 
-const CACHE = "intermiflouze-v1";
+const CACHE = "intermiflouze-v2";
 const OFFLINE_URL = "/hors-ligne";
 
 self.addEventListener("install", (event) => {
