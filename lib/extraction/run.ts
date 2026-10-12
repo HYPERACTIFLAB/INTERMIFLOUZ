@@ -4,8 +4,8 @@ import { SUPPORTED_MIME, type SupportedMime } from "./config";
 
 /**
  * Lit un document déjà enregistré (table documents + stockage) avec Claude et
- * enregistre le résultat. Utilisé par la tâche de fond Netlify et, en local, par
- * une action serveur. Le client Supabase doit agir au nom de l'utilisateur (RLS).
+ * enregistre le résultat. Utilisé par la tâche de fond (/api/extraction) et, à défaut,
+ * par une action serveur. Le client Supabase doit agir au nom de l'utilisateur (RLS).
  */
 export async function lancerExtraction(supabase: SupabaseClient, documentId: string) {
   const { data: doc } = await supabase

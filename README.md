@@ -90,31 +90,32 @@ variable `NEXT_PUBLIC_GOOGLE_LOGIN=1` une fois Google configuré.
 4. Retour dans Supabase : **Authentication → Sign In / Providers → Google** :
    active-le, colle l'ID client et le code secret, enregistre.
 
-### 3. Mettre l'appli en ligne
+### 3. Mettre l'appli en ligne (Vercel, gratuit)
 
-L'appli est hébergée sur **Netlify** (projet `intermiflouze`, adresse
-<https://intermiflouze.netlify.app>), relié au dépôt GitHub : chaque envoi sur la branche
-`master` est mis en ligne automatiquement. Les variables d'environnement sont réglées dans
-**Project configuration → Environment variables** (mêmes noms que ci-dessous).
+L'appli est hébergée sur **Vercel** (offre Hobby, gratuite), reliée au dépôt GitHub : chaque envoi
+sur la branche `master` est mis en ligne automatiquement. (Netlify a été abandonné : son offre
+gratuite limite le nombre de mises en ligne par mois.)
 
-Alternative équivalente : Vercel.
+1. Va sur <https://vercel.com> → **Sign up** → **Continue with GitHub** → offre **Hobby**.
+2. **Add New… → Project** → à côté de `INTERMIFLOUZ`, **Import** (si le dépôt n'apparaît pas :
+   **Adjust GitHub App Permissions** et autorise-le).
+3. Project Name : `intermiflouze`. Ne touche à rien d'autre (Vercel reconnaît Next.js).
+4. Ouvre **Environment Variables** et ajoute, une par une (**Add**) :
 
-1. Va sur <https://vercel.com> → **Sign up** avec GitHub → offre **Hobby** (gratuite).
-2. **Add New → Project** → importe le dépôt `INTERMIFLOUZ`.
-3. Avant de cliquer sur **Deploy**, ouvre **Environment Variables** et ajoute :
-
-   | Nom | Valeur |
+   | Key | Value |
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | ton Project URL Supabase |
-   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ta Publishable key |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ta Publishable key (`sb_publishable_…`) |
    | `ALLOWED_EMAILS` | ton adresse e-mail (seule personne autorisée) |
+   | `ANTHROPIC_API_KEY` | ta clé Claude (facultatif, voir 3 bis) |
 
-4. **Deploy**. Vercel te donne une adresse du type `https://intermiflouz.vercel.app`.
-5. Retour dans Supabase : **Authentication → URL Configuration** :
-   - **Site URL** : ton adresse Vercel.
-   - **Redirect URLs** : ajoute `https://ton-adresse.vercel.app/**` et `http://localhost:3000/**`.
+5. **Deploy**. Au bout de 1 à 2 minutes, Vercel affiche l'adresse, du type
+   `https://intermiflouze.vercel.app`.
 
-Ensuite, chaque modification envoyée sur GitHub est mise en ligne automatiquement.
+Pour changer une variable plus tard : **Settings → Environment Variables**, puis
+**Deployments → ⋯ → Redeploy** (une nouvelle valeur n'est prise en compte qu'après une mise en ligne).
+
+La lecture des documents tourne en tâche de fond (`/api/extraction`, jusqu'à 5 minutes sur l'offre Hobby).
 
 ### 3 bis. Activer la lecture automatique des documents (Claude, payant)
 
@@ -124,11 +125,8 @@ Optionnel : sans clé Claude, l'import fonctionne quand même, mais tu remplis l
 2. **Settings → Billing** : ajoute ta carte et achète du crédit (prépayé, en dollars).
    Laisse **Auto reload désactivé** : tu ne pourras jamais dépenser plus que ton crédit.
 3. **Settings → API Keys → Create Key**, nomme-la `intermiflouze`, copie-la (elle ne s'affiche qu'une fois).
-4. Dans Netlify : **Project configuration → Environment variables → Add a variable** →
-   clé `ANTHROPIC_API_KEY`, cocher **Contains secret values**, coller la clé dans **Production**.
-   Une variable ne peut pas être renommée : en cas d'erreur de nom, en créer une nouvelle.
-5. Relancer une mise en ligne (**Deploys → Trigger deploy**) : une nouvelle valeur n'est prise
-   en compte qu'après une mise en ligne.
+4. Dans Vercel : **Settings → Environment Variables** → clé `ANTHROPIC_API_KEY`, colle la clé, **Save**.
+5. **Deployments → ⋯ → Redeploy** : une nouvelle valeur n'est prise en compte qu'après une mise en ligne.
 
 Attention : la liste des clés de Claude Console n'affiche qu'un aperçu tronqué. La clé complète
 ne s'affiche qu'une fois, à sa création (bouton **Copier**). Une erreur « 401 » signifie que la
@@ -155,16 +153,16 @@ jours de tournage. Elle n'a accès qu'à cet agenda-là : elle ne peut ni lire n
    **Test** : Google coupe alors l'accès 7 jours après chaque connexion. L'appli prévient la veille
    sur l'accueil ; il suffit d'appuyer sur « Reconnecter » (Agenda). Publier l'application
    (« En production ») supprimerait cette limite, mais Google demande alors de compléter le branding
-   (page d'accueil, règles de confidentialité : `https://intermiflouze.netlify.app/confidentialite`).
+   (page d'accueil, règles de confidentialité : `https://intermiflouze.vercel.app/confidentialite`).
 5. Dans **Clients** (ou « Identifiants ») → **Créer un client** :
    - Type d'application : **Application Web** ; nom : `Intermiflouze`.
    - **URI de redirection autorisés** → **Ajouter un URI** :
-     `https://intermiflouze.netlify.app/api/google/callback`
+     `https://intermiflouze.vercel.app/api/google/callback` (ton adresse Vercel)
    - **Créer**. Une fenêtre affiche l'**ID client** et le **Code secret du client**.
-6. Dans Netlify : **Project configuration → Environment variables → Add a variable** :
+6. Dans Vercel : **Settings → Environment Variables** :
    - `GOOGLE_CLIENT_ID` : l'ID client (se termine par `.apps.googleusercontent.com`).
-   - `GOOGLE_CLIENT_SECRET` : le code secret, en cochant **Contains secret values**.
-7. **Deploys → Trigger deploy**, puis dans l'appli : **Agenda → Connecter Google Agenda**.
+   - `GOOGLE_CLIENT_SECRET` : le code secret.
+7. **Deployments → ⋯ → Redeploy**, puis dans l'appli : **Agenda → Connecter Google Agenda**.
    Google affiche « Application non validée » : **Paramètres avancés → Accéder à Intermiflouze**,
    puis coche la case de l'agenda et **Continuer**.
 

@@ -1,7 +1,0 @@
-# Netlify : appli Next.js (détectée automatiquement), Node 22.
-[build]
-  command = "npm run build"
-  publish = ".next"
-
-[build.environment]
-  NODE_VERSION = "22"
