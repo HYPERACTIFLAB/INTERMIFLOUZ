@@ -2,6 +2,7 @@ import { appliquerModifications } from "@/lib/regles/regles";
 import { allocationJournaliere, compteur, type ContratCalcul } from "@/lib/regles/intermittence";
 import { estimationAuSeuil, moyennesContrats } from "@/lib/regles/objectif";
 import { titreContrat } from "@/lib/titre";
+import { netAttendu, ratioNetBrut } from "@/lib/regles/revenus";
 
 /** Données brutes renvoyées par la fonction SQL donnees_widget. */
 export type DonneesWidget = {
@@ -31,6 +32,7 @@ export function resumeWidget(d: DonneesWidget, jour: string) {
       : null;
 
   const nonPercus = contrats.filter((c) => !c.paye && c.date_fin <= jour);
+  const ratio = ratioNetBrut(contrats);
   const enCours = contrats.find((c) => c.date_debut <= jour && c.date_fin >= jour);
   const aVenir = contrats.filter((c) => c.date_debut > jour).sort((a, b) => a.date_debut.localeCompare(b.date_debut))[0];
   const prochain = enCours ?? aVenir;
@@ -42,7 +44,7 @@ export function resumeWidget(d: DonneesWidget, jour: string) {
     manquant: Math.ceil(r.manquant),
     date_limite: r.renouvellement ? r.fin : null,
     are,
-    a_percevoir: Math.round(nonPercus.reduce((s, c) => s + (c.salaire_net ?? 0), 0) / 100),
+    a_percevoir: Math.round(nonPercus.reduce((s, c) => s + (netAttendu(c, ratio).montant ?? 0), 0) / 100),
     salaires_attendus: nonPercus.length,
     aem_manquantes: contrats.filter((c) => c.statut_aem === "a_recevoir" && c.date_fin <= jour).length,
     prochain: prochain ? { titre: titreContrat(prochain), debut: prochain.date_debut, fin: prochain.date_fin, en_cours: prochain === enCours } : null,

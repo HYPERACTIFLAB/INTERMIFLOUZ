@@ -14,7 +14,7 @@ import { NAV_ITEMS } from "@/lib/navigation";
 import { echeanceAcces, googleConfigured } from "@/lib/google/config";
 import { aujourdhui, joursInclus } from "@/lib/regles/dates";
 import { compteur } from "@/lib/regles/intermittence";
-import { salairesParMois } from "@/lib/regles/revenus";
+import { netAttendu, ratioNetBrut, salairesParMois } from "@/lib/regles/revenus";
 import { formatDate, formatEuros, formatNombre, formatPeriode } from "@/lib/format";
 import { marquerPaye } from "./contrats/actions";
 import { marquerRembourse } from "./frais/actions";
@@ -94,7 +94,9 @@ export default async function AccueilPage() {
 
   const r = compteur(contrats, situation, regles, jour);
   const nonPercus = contrats.filter((c) => !c.paye && c.date_fin <= jour).sort((a, b) => a.date_fin.localeCompare(b.date_fin));
-  const totalNonPercu = nonPercus.reduce((s, c) => s + (c.salaire_net ?? 0), 0);
+  const ratio = ratioNetBrut(contrats);
+  const totalNonPercu = nonPercus.reduce((s, c) => s + (netAttendu(c, ratio).montant ?? 0), 0);
+  const nonPercusEstimes = nonPercus.filter((c) => netAttendu(c, ratio).estime).length;
   const aemManquantes = contrats.filter((c) => c.statut_aem === "a_recevoir" && c.date_fin <= jour);
   const aRembourser = notes.filter((n) => n.statut === "a_rembourser").sort((a, b) => a.date.localeCompare(b.date));
   const totalFrais = aRembourser.reduce((s, n) => s + n.montant_ttc, 0);
@@ -135,7 +137,7 @@ export default async function AccueilPage() {
               <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (r.total / r.seuil) * 100)}%` }} />
             </div>
           </Tuile>
-          <Tuile href="#salaires" icone={Wallet} label="À percevoir" valeur={formatEuros(totalNonPercu)} detail={`${nonPercus.length} salaire(s) net(s)`} alerte={nonPercus.length > 0} />
+          <Tuile href="#salaires" icone={Wallet} label="À percevoir" valeur={`${nonPercusEstimes ? "≈ " : ""}${formatEuros(totalNonPercu)}`} detail={`${nonPercus.length} salaire(s) net(s)${nonPercusEstimes ? `, dont ${nonPercusEstimes} estimé(s)` : ""}`} alerte={nonPercus.length > 0} />
           <Tuile href="/frais" icone={Receipt} label="Frais à rembourser" valeur={formatEuros(totalFrais)} detail={`${aRembourser.length} note(s)`} alerte={aRembourser.length > 0} />
           <Tuile href="#aem" icone={FileWarning} label="AEM manquantes" valeur={String(aemManquantes.length)} detail="contrats terminés" alerte={aemManquantes.length > 0} />
         </div>
@@ -155,7 +157,7 @@ export default async function AccueilPage() {
               detail: `${m.contrats} contrat(s)`,
             }))}
           />
-          <p className="mt-2 text-xs text-muted">Selon les dates travaillées (pas la date de paiement). Allocations et micro-entreprise : prochaines étapes.</p>
+          <p className="mt-2 text-xs text-muted">Selon les dates travaillées (pas la date de paiement). Sans fiche de paie, le net est estimé à partir du brut.</p>
         </section>
 
         {/* Salaires non perçus */}
@@ -176,7 +178,15 @@ export default async function AccueilPage() {
                         {formatPeriode(c.date_debut, c.date_fin)} · fini depuis {attente} j
                       </span>
                     </Link>
-                    <span className="shrink-0 text-right text-sm font-medium tabular-nums">{c.salaire_net !== null ? formatEuros(c.salaire_net) : "—"}</span>
+                    {(() => {
+                      const n = netAttendu(c, ratio);
+                      return (
+                        <span className="shrink-0 text-right text-sm font-medium tabular-nums">
+                          {n.montant === null ? "—" : `${n.estime ? "≈ " : ""}${formatEuros(n.montant)}`}
+                          {n.estime && <span className="block text-xs font-normal text-muted">estimé</span>}
+                        </span>
+                      );
+                    })()}
                     <form action={marquerPaye}>
                       <input type="hidden" name="id" value={c.id} />
                       <input type="hidden" name="paye" value="1" />

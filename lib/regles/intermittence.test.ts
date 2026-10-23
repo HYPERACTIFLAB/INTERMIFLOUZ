@@ -95,3 +95,18 @@ describe("recapMois", () => {
     expect(r.jours).toBe(3 + 2);
   });
 });
+
+describe("netAttendu", () => {
+  it("prend le net de la fiche de paie, sinon l'estime avec le rapport net / brut habituel", async () => {
+    const { netAttendu, ratioNetBrut } = await import("./revenus");
+    const ratio = ratioNetBrut([
+      { salaire_brut: 100000, salaire_net: 78000 },
+      { salaire_brut: 50000, salaire_net: 40000 },
+      { salaire_brut: 40000, salaire_net: null },
+    ]);
+    expect(ratio).toBeCloseTo(118000 / 150000);
+    expect(netAttendu({ salaire_brut: 40000, salaire_net: null }, ratio)).toEqual({ montant: Math.round(40000 * ratio), estime: true });
+    expect(netAttendu({ salaire_brut: 40000, salaire_net: 31000 }, ratio)).toEqual({ montant: 31000, estime: false });
+    expect(ratioNetBrut([])).toBe(0.78);
+  });
+});

@@ -27,6 +27,7 @@ import { lienTemporaire } from "@/lib/data/queries";
 import { LIBELLES_AEM, LIBELLES_ANNEXE, LIBELLES_DOCUMENT, type Contrat, type DocumentRow } from "@/lib/data/types";
 import { formatDate, formatEuros, formatNombre, formatPeriodeLongue } from "@/lib/format";
 import { sousTitreContrat, titreContrat } from "@/lib/titre";
+import { netAttendu, ratioNetBrut } from "@/lib/regles/revenus";
 import { deleteDocument, marquerPaye, updateStatutAem } from "../actions";
 import { Uploader } from "../uploader";
 
@@ -42,18 +43,21 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
   const db = await getDb();
   if (!db) return <DemoNotice />;
 
-  const [{ data: contrat }, { data: documents }] = await Promise.all([
+  const [{ data: contrat }, { data: documents }, { data: salaires }] = await Promise.all([
     db.supabase
       .from("contrats")
       .select("*, organisation:organisations(id, nom), projet:projets(id, nom)")
       .eq("id", id)
       .maybeSingle<Contrat>(),
     db.supabase.from("documents").select("*").eq("contrat_id", id).order("created_at").returns<DocumentRow[]>(),
+    db.supabase.from("contrats").select("salaire_brut, salaire_net"),
   ]);
   if (!contrat) notFound();
 
   const liens = await Promise.all((documents ?? []).map((d) => lienTemporaire(db.supabase, d.chemin_stockage)));
 
+  // Sans fiche de paie, le net attendu est estimé à partir du brut (ton rapport net / brut habituel).
+  const attendu = netAttendu(contrat, ratioNetBrut(salaires ?? []));
   const heures = Number(contrat.heures);
   const tauxHoraire = contrat.salaire_brut !== null && heures > 0 ? Math.round(contrat.salaire_brut / heures) : null;
   const lignes: { icone: LucideIcon; label: string; valeur: React.ReactNode }[] = [
@@ -114,7 +118,9 @@ export default async function ContratPage({ params }: PageProps<"/contrats/[id]"
                 <p className={`text-sm ${contrat.paye ? "text-accent" : "text-warning"}`}>
                   {contrat.paye
                     ? `Perçu${contrat.date_paiement ? ` (noté le ${formatDate(contrat.date_paiement)})` : ""}`
-                    : `Pas encore perçu${contrat.salaire_net ? ` · ${formatEuros(contrat.salaire_net)} net attendus` : ""}`}
+                    : `Pas encore perçu${
+                        attendu.montant !== null ? ` · ${attendu.estime ? "environ " : ""}${formatEuros(attendu.montant)} net attendus` : ""
+                      }`}
                 </p>
               </div>
               <form action={marquerPaye}>
