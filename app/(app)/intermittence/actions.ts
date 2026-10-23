@@ -58,6 +58,7 @@ export async function saveRegle(formData: FormData) {
   });
   revalidatePath("/regles");
   revalidatePath("/intermittence");
+  revalidatePath("/micro");
 }
 
 export async function resetRegle(formData: FormData) {
@@ -65,4 +66,5 @@ export async function resetRegle(formData: FormData) {
   await supabase.from("regles_override").delete().eq("cle", String(formData.get("cle")));
   revalidatePath("/regles");
   revalidatePath("/intermittence");
+  revalidatePath("/micro");
 }

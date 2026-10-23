@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-11",
+  "version": "2026-10-23",
   "avertissement": "Estimations indicatives. Seul France Travail calcule officiellement tes droits. Vérifie chaque valeur marquée « à vérifier » et mets-la à jour dans la page Règles de calcul.",
   "regles": {
     "seuil_heures": {
@@ -52,9 +52,36 @@
       "verifie_le": "2026-10-11",
       "a_verifier": true
     },
-    "a_seuil_salaire": { "libelle": "Partie A : seuil de salaire", "valeur": 13700, "unite": "€", "description": "Salaires bruts de la période au-delà desquels le coefficient baisse.", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
-    "a_coef_tranche2": { "libelle": "Partie A : coefficient au-delà du seuil", "valeur": 0.05, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
-    "a_diviseur": { "libelle": "Partie A : diviseur", "valeur": 5000, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "a_seuil_salaire": {
+      "libelle": "Partie A : seuil de salaire",
+      "valeur": 13700,
+      "unite": "€",
+      "description": "Salaires bruts de la période au-delà desquels le coefficient baisse.",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "a_coef_tranche2": {
+      "libelle": "Partie A : coefficient au-delà du seuil",
+      "valeur": 0.05,
+      "unite": "",
+      "description": "",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "a_diviseur": {
+      "libelle": "Partie A : diviseur",
+      "valeur": 5000,
+      "unite": "",
+      "description": "",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
     "b_coef_tranche1": {
       "libelle": "Partie B : coefficient sur les heures jusqu'au seuil",
       "valeur": 0.26,
@@ -65,9 +92,36 @@
       "verifie_le": "2026-10-11",
       "a_verifier": true
     },
-    "b_seuil_heures": { "libelle": "Partie B : seuil d'heures", "valeur": 720, "unite": "h", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
-    "b_coef_tranche2": { "libelle": "Partie B : coefficient au-delà du seuil", "valeur": 0.08, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
-    "b_diviseur": { "libelle": "Partie B : diviseur", "valeur": 507, "unite": "", "description": "", "source": "Unédic – Dossier de synthèse", "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf", "verifie_le": "2026-10-11", "a_verifier": true },
+    "b_seuil_heures": {
+      "libelle": "Partie B : seuil d'heures",
+      "valeur": 720,
+      "unite": "h",
+      "description": "",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "b_coef_tranche2": {
+      "libelle": "Partie B : coefficient au-delà du seuil",
+      "valeur": 0.08,
+      "unite": "",
+      "description": "",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
+    "b_diviseur": {
+      "libelle": "Partie B : diviseur",
+      "valeur": 507,
+      "unite": "",
+      "description": "",
+      "source": "Unédic – Dossier de synthèse",
+      "url": "https://www.unedic.org/storage/uploads/2023/07/24/Dossier20de20synthC3A8se20Intermittents20du20spectacle_uid_64be8b31b1a34.pdf",
+      "verifie_le": "2026-10-11",
+      "a_verifier": true
+    },
     "c_coef": {
       "libelle": "Partie C : part fixe (annexe 8)",
       "valeur": 0.4,
@@ -97,6 +151,83 @@
       "url": "https://blog.culturepay.fr/intermittent-du-spectacle/indemnites-chomage/",
       "verifie_le": "2026-10-11",
       "a_verifier": true
+    },
+    "micro_taux_cotisations": {
+      "libelle": "Cotisations sociales (prestations de services BIC)",
+      "valeur": 21.2,
+      "unite": "%",
+      "description": "Pourcentage du chiffre d'affaires encaissé, payé à l'URSSAF à chaque déclaration. Activité artisanale de prestations de services (BIC), sans ACRE.",
+      "source": "Weblex – Cotisations des micro-entrepreneurs 2026",
+      "url": "https://www.weblex.fr/chiffres-cles/tableau-des-cotisations-sociales-dues-par-les-micro-entrepreneurs-annee-2026",
+      "verifie_le": "2026-10-23",
+      "a_verifier": false,
+      "groupe": "micro"
+    },
+    "micro_taux_vl": {
+      "libelle": "Versement libératoire de l'impôt (prestations BIC)",
+      "valeur": 1.7,
+      "unite": "%",
+      "description": "Impôt sur le revenu payé avec les cotisations (option versement libératoire).",
+      "source": "Weblex – Cotisations des micro-entrepreneurs 2026",
+      "url": "https://www.weblex.fr/chiffres-cles/tableau-des-cotisations-sociales-dues-par-les-micro-entrepreneurs-annee-2026",
+      "verifie_le": "2026-10-23",
+      "a_verifier": false,
+      "groupe": "micro"
+    },
+    "micro_taux_cfp": {
+      "libelle": "Contribution à la formation professionnelle (artisan)",
+      "valeur": 0.3,
+      "unite": "%",
+      "description": "Payée avec les cotisations.",
+      "source": "Legisocial – Cotisations des auto-entrepreneurs 2026",
+      "url": "https://www.legisocial.fr/reperes-sociaux/cotisations-sociales-auto-entrepreneurs-2026.html",
+      "verifie_le": "2026-10-23",
+      "a_verifier": true,
+      "groupe": "micro"
+    },
+    "micro_taux_cma": {
+      "libelle": "Taxe pour frais de chambre de métiers (prestations artisanales)",
+      "valeur": 0.48,
+      "unite": "%",
+      "description": "Hors Alsace-Moselle. Due à partir de la 2e année civile d'activité : l'appli ne la compte pas pendant l'année de création.",
+      "source": "Legisocial – Cotisations des auto-entrepreneurs 2026",
+      "url": "https://www.legisocial.fr/reperes-sociaux/cotisations-sociales-auto-entrepreneurs-2026.html",
+      "verifie_le": "2026-10-23",
+      "a_verifier": true,
+      "groupe": "micro"
+    },
+    "micro_plafond_ca": {
+      "libelle": "Plafond de chiffre d'affaires (prestations de services)",
+      "valeur": 83600,
+      "unite": "€",
+      "description": "Au-delà deux années de suite, sortie du régime micro. Proratisé l'année de création.",
+      "source": "Propulse by CA – Plafonds 2026",
+      "url": "https://propulsebyca.fr/actualites/nouveaux-plafonds-chiffre-affaires-2026-micro-entreprise",
+      "verifie_le": "2026-10-23",
+      "a_verifier": true,
+      "groupe": "micro"
+    },
+    "micro_seuil_tva": {
+      "libelle": "Seuil de franchise de TVA (prestations de services)",
+      "valeur": 37500,
+      "unite": "€",
+      "description": "Au-delà, il faudra facturer la TVA (sauf tolérance jusqu'au seuil majoré).",
+      "source": "Hayot Expertise – Plafonds 2026 et bascule TVA",
+      "url": "https://hayot-expertise.fr/blog/plafonds-micro-entreprise-2026-chiffres-bascule-tva",
+      "verifie_le": "2026-10-23",
+      "a_verifier": true,
+      "groupe": "micro"
+    },
+    "micro_seuil_tva_majore": {
+      "libelle": "Seuil majoré de franchise de TVA (prestations de services)",
+      "valeur": 41250,
+      "unite": "€",
+      "description": "Au-delà, la TVA est due dès le jour du dépassement.",
+      "source": "Hayot Expertise – Plafonds 2026 et bascule TVA",
+      "url": "https://hayot-expertise.fr/blog/plafonds-micro-entreprise-2026-chiffres-bascule-tva",
+      "verifie_le": "2026-10-23",
+      "a_verifier": true,
+      "groupe": "micro"
     }
   }
 }

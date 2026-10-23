@@ -9,6 +9,8 @@ export type Regle = {
   url: string;
   verifie_le: string;
   a_verifier: boolean;
+  /** Rubrique d'affichage dans la page Règles (intermittence par défaut). */
+  groupe?: "micro";
 };
 
 export type CleRegle = keyof typeof config.regles;

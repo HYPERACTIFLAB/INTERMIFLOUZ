@@ -15,7 +15,7 @@ frais, devis/factures, finances et agenda.
 | a | Contacts, contrats + import PDF intelligent | ✅ |
 | b | Compteur d'heures, projection, récap d'actualisation, règles modifiables, objectif ARE | ✅ |
 | c | Notes de frais avec scan + page d'accueil (tableau de bord) | ✅ |
-| d | Micro-entreprise + devis/factures | à venir |
+| d | Micro-entreprise : devis/factures PDF numérotés, encaissements, déclarations URSSAF, plafonds | ✅ |
 | e | Tableau de bord finances + simulateur | à venir |
 | f | Google Agenda (agenda « Tournage » mis à jour automatiquement) | ✅ |
 
@@ -56,6 +56,7 @@ un fichier par étape. Pour chaque fichier, **dans l'ordre**, et une seule fois 
 | `20261011000005_objectif_are.sql` | objectif d'allocation journalière |
 | `20261011000006_etape_f_agenda.sql` | f : connexion Google Agenda |
 | `20261012000001_widget.sql` | widget iPhone (clé perso) |
+| `20261023000001_etape_d_micro.sql` | d : micro-entreprise (devis, factures, encaissements, URSSAF) |
 
 ### 1 ter. Connexion
 
@@ -204,6 +205,13 @@ n'est enregistré, connexion désactivée). Ce mode n'existe qu'en local : une f
 déployée, l'appli exige toujours une connexion.
 
 Commandes utiles : `npm run lint`, `npm run build`, `npm test` (tests des calculs).
+
+La micro-entreprise (`lib/micro/`) suit ces principes : le chiffre d'affaires est celui **encaissé**
+(paiements notés sur les factures, ou recettes sans facture) ; une facture reçoit son numéro
+(`F-2026-001`, suite continue sans trou) seulement quand elle est émise, et ne se modifie plus
+ensuite ; la première déclaration URSSAF regroupe les mois jusqu'à la fin du 4e mois qui suit
+le début d'activité, puis c'est chaque mois. Les PDF sont générés côté serveur (`pdf-lib`,
+`/api/pdf/devis|facture/[id]`).
 
 Les règles de calcul (seuils, formule de l'allocation…) sont dans `config/regles.json`, chacune avec sa
 source et sa date de vérification. Le moteur de calcul est dans `lib/regles/` (testé dans
